@@ -1,0 +1,205 @@
+import os
+import sys
+import uuid
+import shutil
+from datetime import date
+from typing import Optional
+
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+
+# Thêm thư mục gốc vào path để uvicorn/python tìm thấy package backend
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+if PARENT_DIR not in sys.path:
+    sys.path.append(PARENT_DIR)
+
+from backend import database, models, schemas, crud
+
+# Khởi tạo thư mục tải ảnh lỗi
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Tự động tạo bảng trong Database (nếu chưa tồn tại)
+models.Base.metadata.create_all(bind=database.engine)
+
+app = FastAPI(
+    title="Hệ thống Quản lý Khuôn API",
+    version="1.1",
+    description="API cho ứng dụng quản lý quy trình chạy thử và cập nhật lỗi khuôn mẫu"
+)
+
+# Cấu hình CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- API Endpoints ---
+
+@app.get("/api/db-status")
+def get_db_status(db: Session = Depends(database.get_db)):
+    """Kiểm tra tình trạng kết nối tới cơ sở dữ liệu PostgreSQL/SQLite."""
+    try:
+        db.execute(text("SELECT 1"))
+        return {
+            "status": "connected",
+            "database": database.DATABASE_URL.split("@")[-1] if "@" in database.DATABASE_URL else "SQLite/Local"
+        }
+    except Exception as e:
+        return {
+            "status": "disconnected",
+            "error": str(e)
+        }
+
+@app.get("/api/dashboard")
+def get_dashboard(db: Session = Depends(database.get_db)):
+    """Lấy dữ liệu thống kê cho Dashboard và biểu đồ."""
+    return crud.get_dashboard_stats(db)
+
+@app.get("/api/molds", response_model=list[schemas.MoldResponse])
+def get_molds(
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    db: Session = Depends(database.get_db)
+):
+    """Lấy danh sách khuôn mẫu, hỗ trợ tìm kiếm và lọc trạng thái."""
+    return crud.get_molds(db, search=search, status=status)
+
+@app.get("/api/molds/{code}", response_model=schemas.MoldDetailResponse)
+def get_mold_detail(code: str, db: Session = Depends(database.get_db)):
+    """Lấy chi tiết hồ sơ kỹ thuật, lịch sử giao dịch và lỗi của một khuôn."""
+    db_mold = crud.get_mold(db, code)
+    if not db_mold:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy khuôn với mã: {code}"
+        )
+    return db_mold
+
+@app.post("/api/molds", response_model=schemas.MoldResponse, status_code=status.HTTP_201_CREATED)
+def create_mold(mold: schemas.MoldCreate, db: Session = Depends(database.get_db)):
+    """Khai báo nhập kho khuôn mới (Khởi tạo quy trình)."""
+    db_mold = crud.get_mold(db, mold.code)
+    if db_mold:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Mã khuôn '{mold.code}' đã tồn tại trong hệ thống."
+        )
+    return crud.create_mold(db, mold)
+
+@app.post("/api/molds/{code}/update", response_model=schemas.MoldResponse)
+def update_mold_status(
+    code: str,
+    update_data: schemas.MoldStatusUpdate,
+    db: Session = Depends(database.get_db)
+):
+    """Cập nhật trạng thái và ghi nhận lịch sử giao dịch thông thường."""
+    db_mold = crud.update_mold_status(
+        db,
+        code=code,
+        status=update_data.status,
+        notes=update_data.notes,
+        technician=update_data.technician
+    )
+    if not db_mold:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy khuôn với mã: {code}"
+        )
+    return db_mold
+
+@app.post("/api/molds/{code}/error", response_model=schemas.MoldResponse)
+def report_mold_error(
+    code: str,
+    description: str = Form(...),
+    cause: Optional[str] = Form(None),
+    solution: Optional[str] = Form(None),
+    status: str = Form(...),  # Thường là 'Nhà máy tự sửa' hoặc 'NCC đã lấy khuôn'
+    technician: str = Form(...),
+    image: Optional[UploadFile] = File(None),
+    db: Session = Depends(database.get_db)
+):
+    """Ghi nhận lỗi kỹ thuật chạy thử khuôn và tải ảnh lỗi lên máy chủ."""
+    image_url = None
+    if image and image.filename:
+        # Tạo tên file duy nhất tránh trùng lặp tệp
+        file_ext = os.path.splitext(image.filename)[1]
+        unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+        filepath = os.path.join(UPLOAD_DIR, unique_filename)
+        
+        try:
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+            # Lưu đường dẫn tương đối phục vụ qua API tĩnh
+            image_url = f"/uploads/{unique_filename}"
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Lỗi khi lưu ảnh tải lên: {str(e)}"
+            )
+
+    db_mold = crud.create_mold_error_log(
+        db,
+        code=code,
+        description=description,
+        cause=cause,
+        solution=solution,
+        image_url=image_url,
+        status=status,
+        technician=technician
+    )
+    if not db_mold:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy khuôn với mã: {code}"
+        )
+    return db_mold
+
+@app.post("/api/molds/{code}/accept", response_model=schemas.MoldResponse)
+def accept_mold(
+    code: str,
+    report: schemas.MoldAcceptReport,
+    db: Session = Depends(database.get_db)
+):
+    """Ký duyệt nghiệm thu khuôn mẫu từ phía khách hàng duyệt."""
+    db_mold = crud.accept_mold(
+        db,
+        code=code,
+        feedback=report.acceptance_feedback,
+        technician=report.technician
+    )
+    if not db_mold:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy khuôn với mã: {code}"
+        )
+    return db_mold
+
+# --- Phục vụ file tĩnh ---
+
+# Phục vụ thư mục tệp tin hình ảnh tải lên
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+# Phục vụ giao diện Frontend (Hỗ trợ cả dev/test hoặc production build dist)
+frontend_path = os.path.join(PARENT_DIR, "frontend", "dist")
+if not os.path.exists(frontend_path):
+    frontend_path = os.path.join(PARENT_DIR, "frontend")
+
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+else:
+    print(f"Cảnh báo: Thư mục frontend không tồn tại tại {frontend_path}. API hoạt động ở chế độ không giao diện.")
