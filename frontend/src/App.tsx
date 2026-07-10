@@ -884,16 +884,6 @@ export default function App() {
               </button>
             </div>
             <div className="modal-body">
-              {/* TABS LỰA CHỌN CHẾ ĐỘ TRONG MODAL */}
-              <div className="modal-tabs">
-                <button className={`modal-tab-item ${modalMode === 'new' ? 'active' : ''}`} onClick={() => setModalMode('new')}>
-                  Khai Báo Nhập Kho Khuôn Mới
-                </button>
-                <button className={`modal-tab-item ${modalMode === 'update' ? 'active' : ''}`} onClick={() => setModalMode('update')}>
-                  Cập Nhật Trạng Thái & Quy Trình
-                </button>
-              </div>
-
               {/* CHẾ ĐỘ 1: KHAI BÁO MỚI */}
               {modalMode === 'new' && (
                 <form onSubmit={handleCreateMold}>
