@@ -24,6 +24,15 @@ interface ErrorLog {
   created_at: string;
 }
 
+interface MoldFile {
+  id: number;
+  mold_code: string;
+  file_url: string;
+  file_name: string;
+  is_attachment: boolean;
+  created_at: string;
+}
+
 interface Mold {
   code: string;
   name: string;
@@ -37,6 +46,7 @@ interface Mold {
 interface MoldDetail extends Mold {
   transaction_logs: TransactionLog[];
   error_logs: ErrorLog[];
+  files: MoldFile[];
 }
 
 interface DashboardStats {
@@ -60,6 +70,9 @@ export default function App() {
   // Modal Control States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'new' | 'update'>('new');
+  
+  // Fullscreen Lightbox Image url
+  const [lightboxImgUrl, setLightboxImgUrl] = useState<string | null>(null);
 
   // Core Data States
   const [molds, setMolds] = useState<Mold[]>([]);
@@ -104,17 +117,45 @@ export default function App() {
   const [acceptFeedback, setAcceptFeedback] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
 
+  // MULTIPLE FILES & IMAGES UPLOAD (In Modal)
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedAttachments, setSelectedAttachments] = useState<File[]>([]);
+
   // Chart References
   const statusChartRef = useRef<HTMLCanvasElement | null>(null);
   const supplierChartRef = useRef<HTMLCanvasElement | null>(null);
   const statusChartInstance = useRef<Chart | null>(null);
   const supplierChartInstance = useRef<Chart | null>(null);
+  const hiddenGalleryInputRef = useRef<HTMLInputElement | null>(null);
 
   // --- Date Formatter Helper ---
   const formatTime = (isoString: string) => {
     const d = new Date(isoString);
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
+
+  // --- Clipboard Paste (Ctrl+V) listener ---
+  useEffect(() => {
+    if (!isModalOpen) return;
+    
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            setSelectedImages(prev => [...prev, file]);
+            alert("Đã nhận hình ảnh từ bộ nhớ tạm (Ctrl+V)!");
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [isModalOpen]);
 
   // --- API Functions ---
   const fetchDbStatus = async () => {
@@ -304,6 +345,29 @@ export default function App() {
     }
   }, [activeTab, stats]);
 
+  // --- File Upload Helper ---
+  const uploadFilesForMold = async (code: string, files: File[], isAttachment: boolean) => {
+    if (files.length === 0) return;
+    
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append("files", file);
+    });
+    formData.append("is_attachment", String(isAttachment));
+
+    try {
+      const res = await fetch(`${API_BASE}/api/molds/${code}/files`, {
+        method: "POST",
+        body: formData
+      });
+      if (!res.ok) {
+        console.error("Không thể tải lên các tệp đính kèm.");
+      }
+    } catch (e) {
+      console.error("Lỗi khi gọi API tải tệp tin:", e);
+    }
+  };
+
   // --- Form Handlers ---
 
   // Khai báo khuôn mới
@@ -325,11 +389,17 @@ export default function App() {
       const data = await res.json();
 
       if (res.ok) {
+        // Tải lên các hình ảnh gallery hoặc file đính kèm đã chọn
+        await uploadFilesForMold(data.code, selectedImages, false);
+        await uploadFilesForMold(data.code, selectedAttachments, true);
+
         alert(`Nhập kho thành công khuôn: ${data.code}`);
         setNewCode('');
         setNewName('');
         setNewSupplier('');
         setNewImportDate(new Date().toISOString().split('T')[0]);
+        setSelectedImages([]);
+        setSelectedAttachments([]);
 
         // Cập nhật state, đóng modal và xem chi tiết
         setSelectedMoldCode(data.code);
@@ -402,6 +472,10 @@ export default function App() {
       data = await res.json();
 
       if (res.ok) {
+        // Tải các hình ảnh gallery hoặc tệp đính kèm kèm theo
+        await uploadFilesForMold(updateMoldCode, selectedImages, false);
+        await uploadFilesForMold(updateMoldCode, selectedAttachments, true);
+
         alert(`Cập nhật trạng thái khuôn ${updateMoldCode} thành công!`);
         
         // Reset form states
@@ -413,6 +487,8 @@ export default function App() {
         setErrorImageFile(null);
         setAcceptFeedback('');
         setGeneralNotes('');
+        setSelectedImages([]);
+        setSelectedAttachments([]);
 
         // Đồng bộ, đóng modal và xem chi tiết
         setSelectedMoldCode(updateMoldCode);
@@ -424,6 +500,83 @@ export default function App() {
       }
     } catch {
       alert("Lỗi kết nối mạng khi cập nhật trạng thái.");
+    }
+  };
+
+  // Xóa khuôn mẫu
+  const handleDeleteMold = async (code: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa khuôn mẫu ${code} và tất cả nhật ký, hình ảnh, tài liệu đính kèm liên quan? Hành động này không thể hoàn tác.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/molds/${code}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(data.detail || `Đã xóa thành công khuôn ${code}`);
+        if (selectedMoldCode === code) {
+          setSelectedMoldCode(null);
+          setSelectedMoldDetail(null);
+        }
+        await fetchMolds();
+        await fetchStats();
+      } else {
+        alert(`Lỗi khi xóa: ${data.detail || "Không thể thực hiện."}`);
+      }
+    } catch {
+      alert("Lỗi mạng khi thực hiện xóa khuôn.");
+    }
+  };
+
+  // Thêm trực tiếp ảnh vào gallery từ properties panel
+  const handleQuickAddImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedMoldCode || !e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    const formData = new FormData();
+    formData.append("files", file);
+    formData.append("is_attachment", "false");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/molds/${selectedMoldCode}/files`, {
+        method: "POST",
+        body: formData
+      });
+      if (res.ok) {
+        // Tải lại chi tiết khuôn và thống kê
+        await fetchMoldDetails(selectedMoldCode);
+        await fetchStats();
+      } else {
+        alert("Lỗi tải lên hình ảnh mẫu.");
+      }
+    } catch {
+      alert("Lỗi kết nối mạng khi tải ảnh.");
+    }
+  };
+
+  // Xóa một ảnh hoặc tài liệu khỏi khuôn
+  const handleDeleteFile = async (fileId: number) => {
+    if (!window.confirm("Bạn có chắc muốn xóa tệp tin này khỏi hồ sơ khuôn?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/files/${fileId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        if (selectedMoldCode) {
+          await fetchMoldDetails(selectedMoldCode);
+          await fetchStats();
+        }
+      } else {
+        alert("Không thể xóa tệp tin.");
+      }
+    } catch {
+      alert("Lỗi kết nối khi xóa tệp tin.");
     }
   };
 
@@ -465,6 +618,8 @@ export default function App() {
     setNewName('');
     setNewSupplier('');
     setNewImportDate(new Date().toISOString().split('T')[0]);
+    setSelectedImages([]);
+    setSelectedAttachments([]);
     setModalMode('new');
     setIsModalOpen(true);
   };
@@ -631,7 +786,7 @@ export default function App() {
                         <th>NHÀ CUNG CẤP</th>
                         <th>NGÀY NHẬP</th>
                         <th>TRẠNG THÁI</th>
-                        <th>THAO TÁC</th>
+                        <th style={{ width: '110px' }}>THAO TÁC</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -656,14 +811,18 @@ export default function App() {
                               <td>{mold.import_date}</td>
                               <td><span className={`status-pill ${statusClass}`}>{mold.status}</span></td>
                               <td>
-                                <div style={{ display: 'flex', gap: '8px' }}>
+                                <div style={{ display: 'flex', gap: '4px' }}>
                                   {/* Xem chi tiết */}
                                   <button className="detail-view-trigger" onClick={(e) => { e.stopPropagation(); setSelectedMoldCode(mold.code); }} title="Xem hồ sơ khuôn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ width: '16px', height: '16px' }}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
                                   </button>
-                                  {/* SỬA / CẬP NHẬT QUY TRÌNH (Mở modal ở Edit mode) */}
+                                  {/* SỬA / CẬP NHẬT QUY TRÌNH */}
                                   <button className="edit-icon-btn" onClick={(e) => { e.stopPropagation(); triggerQuickUpdate(mold.code); }} title="Cập nhật quy trình">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="edit-icon"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" /></svg>
+                                  </button>
+                                  {/* XÓA KHUÔN (Nút mới) */}
+                                  <button className="delete-icon-btn" onClick={(e) => { e.stopPropagation(); handleDeleteMold(mold.code); }} title="Xóa khuôn khỏi xưởng">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="edit-icon"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                                   </button>
                                 </div>
                               </td>
@@ -701,6 +860,30 @@ export default function App() {
                       </button>
                     </div>
 
+                    {/* DÃY HÌNH THUMBNAIL (GALLERY - KIỂU ADMAKE) */}
+                    <div className="properties-gallery-container">
+                      <div className="properties-gallery-strip">
+                        {/* Hiển thị các hình ảnh của khuôn */}
+                        {selectedMoldDetail.files?.filter(f => !f.is_attachment).map(file => (
+                          <div key={file.id} className="gallery-thumbnail-wrapper" onClick={() => setLightboxImgUrl(`${API_BASE}${file.file_url}`)}>
+                            <img src={`${API_BASE}${file.file_url}`} alt={file.file_name} />
+                            {/* Nút Xóa ảnh gallery nhanh */}
+                            <button className="gallery-delete-btn" onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }} title="Xóa ảnh khỏi gallery">
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                        
+                        {/* Nút ADD hình ảnh nhanh */}
+                        <div className="gallery-add-btn" onClick={() => hiddenGalleryInputRef.current?.click()} title="Thêm ảnh mẫu mới">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="gallery-add-icon"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                          <span>+ ADD</span>
+                        </div>
+                        
+                        <input type="file" ref={hiddenGalleryInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleQuickAddImage} />
+                      </div>
+                    </div>
+
                     <div className="detail-body">
                       {/* Trạng thái hiện tại */}
                       <div className="detail-status-row">
@@ -725,6 +908,24 @@ export default function App() {
                         </div>
                       </div>
 
+                      {/* TÀI LIỆU ĐÍNH KÈM (PDF / ZIP / EXCEL) */}
+                      {selectedMoldDetail.files?.filter(f => f.is_attachment).length > 0 && (
+                        <div className="attachments-list-container">
+                          <h4>TÀI LIỆU ĐÍNH KÈM</h4>
+                          {selectedMoldDetail.files.filter(f => f.is_attachment).map(file => (
+                            <div key={file.id} className="attachment-item">
+                              <a href={`${API_BASE}${file.file_url}`} target="_blank" rel="noreferrer" className="attach-link" title="Mở / Tải tài liệu">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="attach-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                                {file.file_name}
+                              </a>
+                              <button className="delete-icon-btn" onClick={() => handleDeleteFile(file.id)} title="Gỡ tài liệu" style={{ padding: '2px' }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '14px', height: '14px' }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {/* NHẬT KÝ BÁO LỖI (Trạng thái sự cố) */}
                       {(selectedMoldDetail.status === 'Nhà máy tự sửa' || selectedMoldDetail.status === 'NCC đã lấy khuôn') && selectedMoldDetail.error_logs?.length > 0 && (
                         <div className="detail-section-box error-box">
@@ -743,7 +944,7 @@ export default function App() {
                                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="img-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
                                   Hình ảnh chi tiết lỗi:
                                 </p>
-                                <div className="image-zoom-box">
+                                <div className="image-zoom-box" onClick={() => setLightboxImgUrl(`${API_BASE}${selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].image_url}`)} style={{ cursor: 'pointer' }}>
                                   <img src={`${API_BASE}${selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].image_url}`} alt="Hình ảnh lỗi kỹ thuật" />
                                 </div>
                               </div>
@@ -907,6 +1108,54 @@ export default function App() {
                       <input type="date" id="new-import-date" required value={newImportDate} onChange={(e) => setNewImportDate(e.target.value)} />
                     </div>
                   </div>
+
+                  {/* THÊM FILE ĐÍNH KÈM KHI KHAI BÁO MỚI */}
+                  <div className="form-row" style={{ marginTop: '16px' }}>
+                    <div className="form-group">
+                      <label>HÌNH ẢNH MẪU ĐẦU TIÊN (HỖ TRỢ CTRL+V)</label>
+                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-img-picker')?.click()}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                        <span>Nhấn để chọn ảnh mẫu hoặc <b>bấm Ctrl+V</b> để dán ảnh</span>
+                      </div>
+                      <input type="file" id="modal-img-picker" style={{ display: 'none' }} accept="image/*" multiple onChange={(e) => {
+                        if (e.target.files) setSelectedImages(prev => [...prev, ...Array.from(e.target.files!)]);
+                      }} />
+                      
+                      {selectedImages.length > 0 && (
+                        <div className="selected-files-preview">
+                          {selectedImages.map((file, i) => (
+                            <div key={i} className="preview-file-badge">
+                              <span>📸 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+                              <button type="button" className="preview-file-remove" onClick={() => setSelectedImages(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>TÀI LIỆU KÈM THEO (.PDF, .ZIP, .XLSX...)</label>
+                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-doc-picker')?.click()}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                        <span>Nhấn để chọn tệp tài liệu / bản vẽ đính kèm</span>
+                      </div>
+                      <input type="file" id="modal-doc-picker" style={{ display: 'none' }} accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" multiple onChange={(e) => {
+                        if (e.target.files) setSelectedAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+                      }} />
+                      
+                      {selectedAttachments.length > 0 && (
+                        <div className="selected-files-preview">
+                          {selectedAttachments.map((file, i) => (
+                            <div key={i} className="preview-file-badge">
+                              <span>📄 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+                              <button type="button" className="preview-file-remove" onClick={() => setSelectedAttachments(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="form-actions" style={{ marginTop: '24px' }}>
                     <button type="submit" className="btn-primary">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
@@ -968,9 +1217,9 @@ export default function App() {
                         </div>
                       </div>
                       <div className="form-group">
-                        <label htmlFor="error-image">HÌNH ẢNH CHI TIẾT LỖI</label>
+                        <label htmlFor="error-image">HÌNH ẢNH CHI TIẾT LỖI BAN ĐẦU</label>
                         <input type="file" id="error-image" accept="image/*" className="file-input-styled" onChange={(e) => setErrorImageFile(e.target.files ? e.target.files[0] : null)} />
-                        <p className="file-help">Tải ảnh chụp sản phẩm lỗi hoặc khu vực khuôn bị sự cố lên server</p>
+                        <p className="file-help">Tải ảnh chụp sự cố trực tiếp của lần sửa đổi này lên</p>
                       </div>
                     </div>
                   )}
@@ -993,6 +1242,55 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* HỖ TRỢ UPLOAD HÌNH ẢNH / TÀI LIỆU KÈM THEO TRONG CẬP NHẬT TRẠNG THÁI */}
+                  {updateStatus && (
+                    <div className="form-row" style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                      <div className="form-group">
+                        <label>ẢNH THỰC TẾ GIAO DỊCH (HỖ TRỢ CTRL+V)</label>
+                        <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-img')?.click()}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                          <span>Nhấn để chọn ảnh hoặc <b>bấm Ctrl+V</b> để dán ảnh</span>
+                        </div>
+                        <input type="file" id="modal-update-img" style={{ display: 'none' }} accept="image/*" multiple onChange={(e) => {
+                          if (e.target.files) setSelectedImages(prev => [...prev, ...Array.from(e.target.files!)]);
+                        }} />
+                        
+                        {selectedImages.length > 0 && (
+                          <div className="selected-files-preview">
+                            {selectedImages.map((file, i) => (
+                              <div key={i} className="preview-file-badge">
+                                <span>📸 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+                                <button type="button" className="preview-file-remove" onClick={() => setSelectedImages(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="form-group">
+                        <label>TÀI LIỆU / PHIẾU BÀN GIAO ĐÍNH KÈM</label>
+                        <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-doc')?.click()}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                          <span>Chọn tài liệu giao dịch đi kèm (.pdf, .zip, .xlsx...)</span>
+                        </div>
+                        <input type="file" id="modal-update-doc" style={{ display: 'none' }} accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" multiple onChange={(e) => {
+                          if (e.target.files) setSelectedAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+                        }} />
+                        
+                        {selectedAttachments.length > 0 && (
+                          <div className="selected-files-preview">
+                            {selectedAttachments.map((file, i) => (
+                              <div key={i} className="preview-file-badge">
+                                <span>📄 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+                                <button type="button" className="preview-file-remove" onClick={() => setSelectedAttachments(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="form-actions" style={{ marginTop: '24px' }}>
                     <button type="submit" className="btn-primary">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
@@ -1002,6 +1300,20 @@ export default function App() {
                 </form>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================================================
+         LIGHTBOX OVERLAY (Xem ảnh full-size phóng to)
+         ========================================================================== */}
+      {lightboxImgUrl && (
+        <div className="lightbox-backdrop" onClick={() => setLightboxImgUrl(null)}>
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <button className="lightbox-close" onClick={() => setLightboxImgUrl(null)}>
+              &times;
+            </button>
+            <img src={lightboxImgUrl} alt="Phóng to ảnh mẫu" />
           </div>
         </div>
       )}

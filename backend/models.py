@@ -19,6 +19,7 @@ class Mold(Base):
     # Quan hệ với các bảng khác
     transaction_logs = relationship("TransactionLog", back_populates="mold", cascade="all, delete-orphan")
     error_logs = relationship("ErrorLog", back_populates="mold", cascade="all, delete-orphan")
+    files = relationship("MoldFile", back_populates="mold", cascade="all, delete-orphan")
 
 class TransactionLog(Base):
     __tablename__ = "transaction_logs"
@@ -41,6 +42,20 @@ class ErrorLog(Base):
     cause = Column(Text, nullable=True)
     solution = Column(Text, nullable=True)
     image_url = Column(String(255), nullable=True)
+    attachment_url = Column(String(255), nullable=True)
+    attachment_name = Column(String(255), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     mold = relationship("Mold", back_populates="error_logs")
+
+class MoldFile(Base):
+    __tablename__ = "mold_files"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mold_code = Column(String(50), ForeignKey("molds.code", ondelete="CASCADE"), nullable=False)
+    file_url = Column(String(255), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    is_attachment = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    mold = relationship("Mold", back_populates="files")

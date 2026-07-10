@@ -176,3 +176,7 @@ def get_dashboard_stats(db: Session) -> Dict:
         "status_distribution": status_dist,
         "supplier_distribution": supplier_dist
     }
+
+def delete_mold(db: Session, mold: models.Mold):
+    db.delete(mold)
+    db.commit()

@@ -1378,3 +1378,268 @@ body {
     }
 }
 
+/* THƯ VIỆN ẢNH THUMBNAIL (PROPERTIES PANEL) */
+.properties-gallery-container {
+    padding: 0 24px;
+    margin-top: -8px;
+}
+
+.properties-gallery-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0 12px 0;
+    overflow-x: auto;
+    scrollbar-width: thin; /* Firefox */
+}
+
+/* Custom Scrollbar cho Webkit */
+.properties-gallery-strip::-webkit-scrollbar {
+    height: 4px;
+}
+.properties-gallery-strip::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+}
+
+.gallery-thumbnail-wrapper {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+    background-color: #fafafa;
+}
+
+.gallery-thumbnail-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: var(--transition-fast);
+}
+
+.gallery-thumbnail-wrapper img:hover {
+    transform: scale(1.08);
+}
+
+.gallery-delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: rgba(239, 68, 68, 0.95);
+    color: white;
+    border: none;
+    outline: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: var(--transition-fast);
+    z-index: 10;
+}
+
+.gallery-thumbnail-wrapper:hover .gallery-delete-btn {
+    opacity: 1;
+}
+
+.gallery-add-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--primary-color);
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: var(--transition-fast);
+    font-size: 10px;
+    font-weight: 700;
+    gap: 4px;
+    box-shadow: var(--shadow-sm);
+}
+
+.gallery-add-btn:hover {
+    background-color: #e0e7ff;
+    transform: scale(1.02);
+}
+
+.gallery-add-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Lightbox Modal (Xem ảnh full-size) */
+.lightbox-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+.lightbox-content img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: var(--radius-md);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+    outline: none;
+}
+
+/* DANH SÁCH FILE TÀI LIỆU ĐÍNH KÈM */
+.attachments-list-container {
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+    margin-top: 10px;
+}
+
+.attachments-list-container h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.attachment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background-color: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+    transition: var(--transition-fast);
+}
+
+.attachment-item:hover {
+    background-color: #f1f5f9;
+}
+
+.attach-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.attach-link:hover {
+    text-decoration: underline;
+}
+
+.attach-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+/* Thao tác xóa trong bảng */
+.delete-icon-btn {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px;
+    border-radius: 4px;
+    transition: var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-icon-btn:hover {
+    color: #ef4444;
+    background-color: #fef2f2;
+}
+
+/* Paste / Drag Zone inside Modal */
+.upload-drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    text-align: center;
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-drop-zone:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.upload-drop-icon {
+    width: 32px;
+    height: 32px;
+    color: var(--text-secondary);
+}
+
+.selected-files-preview {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.preview-file-badge {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background-color: #f1f5f9;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.preview-file-remove {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+

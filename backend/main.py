@@ -3,7 +3,7 @@ import sys
 import uuid
 import shutil
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -188,6 +188,88 @@ def accept_mold(
             detail=f"Không tìm thấy khuôn với mã: {code}"
         )
     return db_mold
+
+@app.delete("/api/molds/{code}")
+def delete_mold(code: str, db: Session = Depends(database.get_db)):
+    """Xóa khuôn mẫu và toàn bộ nhật ký sự kiện, tệp đính kèm liên quan."""
+    db_mold = crud.get_mold(db, code=code)
+    if not db_mold:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy khuôn với mã: {code}"
+        )
+    
+    # Xóa tệp vật lý của các file đính kèm liên quan
+    for file in db_mold.files:
+        file_path = os.path.join(PARENT_DIR, file.file_url.lstrip("/"))
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"Lỗi khi xóa tệp vật lý: {e}")
+                
+    crud.delete_mold(db, db_mold)
+    return {"detail": f"Đã xóa thành công khuôn {code} và toàn bộ nhật ký liên quan"}
+
+@app.post("/api/molds/{code}/files")
+def upload_mold_files(
+    code: str,
+    files: List[UploadFile] = File(...),
+    is_attachment: bool = Form(False),
+    db: Session = Depends(database.get_db)
+):
+    """Tải lên nhiều hình ảnh hoặc tài liệu đính kèm cho khuôn."""
+    db_mold = crud.get_mold(db, code=code)
+    if not db_mold:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy khuôn với mã: {code}"
+        )
+    
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    saved_files = []
+    from datetime import datetime
+    for file in files:
+        # Tạo tên file độc nhất để không trùng lặp
+        unique_filename = f"{code}_{int(datetime.now().timestamp())}_{file.filename}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        db_file = models.MoldFile(
+            mold_code=code,
+            file_url=f"/uploads/{unique_filename}",
+            file_name=file.filename,
+            is_attachment=is_attachment
+        )
+        db.add(db_file)
+        saved_files.append(db_file)
+        
+    db.commit()
+    return {"detail": "Tải lên thành công", "files": [f.file_name for f in saved_files]}
+
+@app.delete("/api/files/{file_id}")
+def delete_mold_file(file_id: int, db: Session = Depends(database.get_db)):
+    """Xóa một tệp đính kèm hoặc hình ảnh cụ thể khỏi khuôn."""
+    db_file = db.query(models.MoldFile).filter(models.MoldFile.id == file_id).first()
+    if not db_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy tệp tin"
+        )
+    
+    # Xóa tệp vật lý
+    file_path = os.path.join(PARENT_DIR, db_file.file_url.lstrip("/"))
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            print(f"Lỗi khi xóa tệp vật lý: {e}")
+            
+    db.delete(db_file)
+    db.commit()
+    return {"detail": "Đã xóa tệp tin thành công"}
 
 # --- Phục vụ file tĩnh ---
 

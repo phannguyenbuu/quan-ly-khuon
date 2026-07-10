@@ -55,10 +55,23 @@ class MoldResponse(MoldBase):
     class Config:
         from_attributes = True
 
-# Chi tiết khuôn bao gồm cả lịch sử giao dịch và nhật ký báo lỗi
+# --- Mold File Schemas ---
+class MoldFileResponse(BaseModel):
+    id: int
+    mold_code: str
+    file_url: str
+    file_name: str
+    is_attachment: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Chi tiết khuôn bao gồm cả lịch sử giao dịch, nhật ký báo lỗi và danh sách hình ảnh/tệp đính kèm
 class MoldDetailResponse(MoldResponse):
     transaction_logs: List[TransactionLogResponse] = []
     error_logs: List[ErrorLogResponse] = []
+    files: List[MoldFileResponse] = []
 
     class Config:
         from_attributes = True
