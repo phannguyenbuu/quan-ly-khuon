@@ -25,6 +25,8 @@ class ErrorLogBase(BaseModel):
     cause: Optional[str] = None
     solution: Optional[str] = None
     image_url: Optional[str] = None
+    repair_deadline: Optional[date] = None
+    supplier_pickup_status: Optional[str] = None
 
 class ErrorLogCreate(ErrorLogBase):
     mold_code: str
@@ -51,6 +53,9 @@ class MoldResponse(MoldBase):
     status: str
     acceptance_date: Optional[date] = None
     acceptance_feedback: Optional[str] = None
+    acceptance_image_url: Optional[str] = None
+    acceptance_attachment_url: Optional[str] = None
+    acceptance_attachment_name: Optional[str] = None
 
     class Config:
         from_attributes = True

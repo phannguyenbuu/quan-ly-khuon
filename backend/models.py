@@ -15,6 +15,9 @@ class Mold(Base):
     # Nghiệm thu (nếu có)
     acceptance_date = Column(Date, nullable=True)
     acceptance_feedback = Column(Text, nullable=True)
+    acceptance_image_url = Column(String(255), nullable=True)
+    acceptance_attachment_url = Column(String(255), nullable=True)
+    acceptance_attachment_name = Column(String(255), nullable=True)
 
     # Quan hệ với các bảng khác
     transaction_logs = relationship("TransactionLog", back_populates="mold", cascade="all, delete-orphan")
@@ -44,6 +47,8 @@ class ErrorLog(Base):
     image_url = Column(String(255), nullable=True)
     attachment_url = Column(String(255), nullable=True)
     attachment_name = Column(String(255), nullable=True)
+    repair_deadline = Column(Date, nullable=True)
+    supplier_pickup_status = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     mold = relationship("Mold", back_populates="error_logs")

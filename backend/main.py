@@ -131,6 +131,8 @@ def report_mold_error(
     status: str = Form(...),  # Thường là 'Nhà máy tự sửa' hoặc 'NCC đã lấy khuôn'
     technician: str = Form(...),
     image: Optional[UploadFile] = File(None),
+    repair_deadline: Optional[str] = Form(None),
+    supplier_pickup_status: Optional[str] = Form(None),
     db: Session = Depends(database.get_db)
 ):
     """Ghi nhận lỗi kỹ thuật chạy thử khuôn và tải ảnh lỗi lên máy chủ."""
@@ -152,6 +154,14 @@ def report_mold_error(
                 detail=f"Lỗi khi lưu ảnh tải lên: {str(e)}"
             )
 
+    parsed_deadline = None
+    if repair_deadline:
+        try:
+            from datetime import datetime
+            parsed_deadline = datetime.strptime(repair_deadline, "%Y-%m-%d").date()
+        except Exception:
+            pass
+
     db_mold = crud.create_mold_error_log(
         db,
         code=code,
@@ -160,7 +170,9 @@ def report_mold_error(
         solution=solution,
         image_url=image_url,
         status=status,
-        technician=technician
+        technician=technician,
+        repair_deadline=parsed_deadline,
+        supplier_pickup_status=supplier_pickup_status
     )
     if not db_mold:
         raise HTTPException(
@@ -172,15 +184,53 @@ def report_mold_error(
 @app.post("/api/molds/{code}/accept", response_model=schemas.MoldResponse)
 def accept_mold(
     code: str,
-    report: schemas.MoldAcceptReport,
+    acceptance_feedback: str = Form(...),
+    technician: str = Form(...),
+    image: Optional[UploadFile] = File(None),
+    attachment: Optional[UploadFile] = File(None),
     db: Session = Depends(database.get_db)
 ):
-    """Ký duyệt nghiệm thu khuôn mẫu từ phía khách hàng duyệt."""
+    """Ký duyệt nghiệm thu khuôn mẫu từ phía khách hàng duyệt kèm ảnh và tài liệu đính kèm."""
+    image_url = None
+    if image and image.filename:
+        file_ext = os.path.splitext(image.filename)[1]
+        unique_filename = f"accept_{uuid.uuid4().hex}{file_ext}"
+        filepath = os.path.join(UPLOAD_DIR, unique_filename)
+        try:
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+            image_url = f"/uploads/{unique_filename}"
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Lỗi khi lưu ảnh nghiệm thu: {str(e)}"
+            )
+
+    attachment_url = None
+    attachment_name = None
+    if attachment and attachment.filename:
+        file_ext = os.path.splitext(attachment.filename)[1]
+        unique_filename = f"accept_doc_{uuid.uuid4().hex}{file_ext}"
+        filepath = os.path.join(UPLOAD_DIR, unique_filename)
+        try:
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(attachment.file, buffer)
+            attachment_url = f"/uploads/{unique_filename}"
+            attachment_name = attachment.filename
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Lỗi khi lưu tài liệu nghiệm thu: {str(e)}"
+            )
+
     db_mold = crud.accept_mold(
         db,
         code=code,
-        feedback=report.acceptance_feedback,
-        technician=report.technician
+        feedback=acceptance_feedback,
+        technician=technician,
+        image_url=image_url,
+        attachment_url=attachment_url,
+        attachment_name=attachment_name
     )
     if not db_mold:
         raise HTTPException(

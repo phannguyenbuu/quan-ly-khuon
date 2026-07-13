@@ -119,11 +119,11 @@ def test_report_mold_error():
     assert any(log["status"] == "Nhà máy tự sửa" for log in detail["transaction_logs"])
 
 def test_accept_mold():
-    payload = {
+    form_data = {
         "acceptance_feedback": "Sản phẩm đẹp đạt chuẩn bóng 100%, phê duyệt chạy sản xuất đại trà",
         "technician": "Đại diện Khách hàng"
     }
-    response = client.post("/api/molds/MK-TEST-01/accept", json=payload)
+    response = client.post("/api/molds/MK-TEST-01/accept", data=form_data)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "Khách duyệt (Sản xuất)"

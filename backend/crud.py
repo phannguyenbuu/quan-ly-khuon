@@ -73,7 +73,18 @@ def update_mold_status(db: Session, code: str, status: str, notes: Optional[str]
     
     return db_mold
 
-def create_mold_error_log(db: Session, code: str, description: str, cause: Optional[str], solution: Optional[str], image_url: Optional[str], status: str, technician: str) -> Optional[models.Mold]:
+def create_mold_error_log(
+    db: Session,
+    code: str,
+    description: str,
+    cause: Optional[str],
+    solution: Optional[str],
+    image_url: Optional[str],
+    status: str,
+    technician: str,
+    repair_deadline: Optional[date] = None,
+    supplier_pickup_status: Optional[str] = None
+) -> Optional[models.Mold]:
     db_mold = get_mold(db, code)
     if not db_mold:
         return None
@@ -84,7 +95,9 @@ def create_mold_error_log(db: Session, code: str, description: str, cause: Optio
         description=description,
         cause=cause,
         solution=solution,
-        image_url=image_url
+        image_url=image_url,
+        repair_deadline=repair_deadline,
+        supplier_pickup_status=supplier_pickup_status
     )
     db.add(db_error)
     
@@ -93,18 +106,34 @@ def create_mold_error_log(db: Session, code: str, description: str, cause: Optio
     db.commit()
     db.refresh(db_mold)
     
+    # Tạo ghi chú lịch sử giao dịch chi tiết
+    notes_parts = [f"Báo lỗi chạy thử hỏng: {description}"]
+    if repair_deadline:
+        notes_parts.append(f"Hạn chót: {repair_deadline.strftime('%d/%m/%Y')}")
+    if supplier_pickup_status:
+        notes_parts.append(f"Tình trạng NCC: {supplier_pickup_status}")
+    notes_str = ". ".join(notes_parts)
+
     # Ghi nhận lịch sử giao dịch
     create_transaction_log(
         db,
         mold_code=code,
         status=status,
-        notes=f"Báo lỗi chạy thử hỏng: {description}",
+        notes=notes_str,
         technician=technician
     )
     
     return db_mold
 
-def accept_mold(db: Session, code: str, feedback: str, technician: str) -> Optional[models.Mold]:
+def accept_mold(
+    db: Session,
+    code: str,
+    feedback: str,
+    technician: str,
+    image_url: Optional[str] = None,
+    attachment_url: Optional[str] = None,
+    attachment_name: Optional[str] = None
+) -> Optional[models.Mold]:
     db_mold = get_mold(db, code)
     if not db_mold:
         return None
@@ -112,6 +141,9 @@ def accept_mold(db: Session, code: str, feedback: str, technician: str) -> Optio
     db_mold.status = "Khách duyệt (Sản xuất)"
     db_mold.acceptance_date = date.today()
     db_mold.acceptance_feedback = feedback
+    db_mold.acceptance_image_url = image_url
+    db_mold.acceptance_attachment_url = attachment_url
+    db_mold.acceptance_attachment_name = attachment_name
     
     db.commit()
     db.refresh(db_mold)
@@ -123,7 +155,7 @@ def accept_mold(db: Session, code: str, feedback: str, technician: str) -> Optio
         status="Khách duyệt (Sản xuất)",
         notes=f"Khách duyệt nghiệm thu: {feedback}",
         technician=technician
-    )
+      )
     
     return db_mold
 

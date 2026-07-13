@@ -579,7 +579,7 @@ body {
    ========================================================================== */
 .lookup-grid-layout {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
     gap: 20px;
 }
 
@@ -1096,7 +1096,7 @@ body {
 
 .config-grid-layout {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
     gap: 20px;
 }
 
