@@ -64,3 +64,13 @@ class MoldFile(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     mold = relationship("Mold", back_populates="files")
+
+class ZaloNotification(Base):
+    __tablename__ = "zalo_notifications"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    recipient = Column(String(50), nullable=False)  # 'Thợ khuôn' | 'QC' | 'Quản lý'
+    message = Column(Text, nullable=False)
+    image_url = Column(String(255), nullable=True)
+    status = Column(String(50), default="Đã gửi qua Zalo", nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)

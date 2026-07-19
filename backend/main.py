@@ -321,6 +321,11 @@ def delete_mold_file(file_id: int, db: Session = Depends(database.get_db)):
     db.commit()
     return {"detail": "Đã xóa tệp tin thành công"}
 
+@app.get("/api/zalo-notifications", response_model=List[schemas.ZaloNotificationResponse])
+def get_zalo_notifications(db: Session = Depends(database.get_db)):
+    """Lấy danh sách lịch sử các thông báo Zalo đã được hệ thống tự động mô phỏng gửi đi."""
+    return db.query(models.ZaloNotification).order_by(models.ZaloNotification.created_at.desc()).limit(50).all()
+
 # --- Phục vụ file tĩnh ---
 
 # Phục vụ thư mục tệp tin hình ảnh tải lên

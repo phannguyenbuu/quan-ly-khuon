@@ -90,3 +90,15 @@ class MoldStatusUpdate(BaseModel):
 class MoldAcceptReport(BaseModel):
     acceptance_feedback: str
     technician: str
+
+# --- Zalo Notification Schemas ---
+class ZaloNotificationResponse(BaseModel):
+    id: int
+    recipient: str
+    message: str
+    image_url: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

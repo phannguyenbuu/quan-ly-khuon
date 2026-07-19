@@ -48,6 +48,13 @@ def create_mold(db: Session, mold: schemas.MoldCreate) -> models.Mold:
         notes=f"Nhập kho thành công khuôn {mold.name} từ NCC {mold.supplier}",
         technician="Hệ thống"
     )
+
+    # Gửi Zalo thông báo cho Quản lý nắm tình hình chung
+    create_zalo_notification(
+        db,
+        recipient="Quản lý",
+        message=f"[CSDL TẬP TRUNG] Nhập kho khuôn mẫu mới thành công. Mã khuôn: {mold.code} | Tên khuôn: {mold.name} | Nhà cung cấp: {mold.supplier} | Ngày nhập: {mold.import_date}."
+    )
     
     return db_mold
 
@@ -70,6 +77,25 @@ def update_mold_status(db: Session, code: str, status: str, notes: Optional[str]
         notes=notes,
         technician=technician
     )
+
+    # Gửi thông báo Zalo tương ứng
+    if status == "Thử khuôn":
+        create_zalo_notification(
+            db,
+            recipient="QC",
+            message=f"[QC THỬ KHUÔN] Khuôn {code} ({db_mold.name}) bắt đầu tiến hành thử nghiệm chạy mẫu. Kỹ thuật viên phụ trách: {technician}. Ghi chú thử: {notes or 'Không có ghi chú'}."
+        )
+        create_zalo_notification(
+            db,
+            recipient="Quản lý",
+            message=f"[TIẾN TRÌNH] Cập nhật: Khuôn {code} chuyển sang trạng thái 'Thử khuôn'. Kỹ thuật viên: {technician}."
+        )
+    elif status == "Gửi mẫu khách":
+        create_zalo_notification(
+            db,
+            recipient="Quản lý",
+            message=f"[TIẾN TRÌNH] Cập nhật: Khuôn {code} ({db_mold.name}) đã dập mẫu đạt và gửi mẫu thử lần 1 cho khách hàng duyệt. Kỹ thuật viên: {technician}."
+        )
     
     return db_mold
 
@@ -122,6 +148,27 @@ def create_mold_error_log(
         notes=notes_str,
         technician=technician
     )
+
+    # Gửi thông báo Zalo dựa trên chế độ tự sửa hoặc gửi nhà cung cấp
+    deadline_str = repair_deadline.strftime("%d/%m/%Y") if repair_deadline else "Không có"
+    if status == "Nhà máy tự sửa":
+        create_zalo_notification(
+            db,
+            recipient="Thợ khuôn",
+            message=f"[THỢ KHUÔN - PHÂN CÔNG] Yêu cầu tự sửa chữa sự cố khuôn {code} ({db_mold.name}). Mô tả sự cố: {description}. Nguyên nhân: {cause or 'Chưa xác định'}. Hạn chót hoàn thành (Deadline): {deadline_str}. QC báo lỗi: {technician}.",
+            image_url=image_url
+        )
+        create_zalo_notification(
+            db,
+            recipient="Quản lý",
+            message=f"[CẢNH BÁO SỰ CỐ] Khuôn {code} lỗi: {description}. Nhà máy đã phân công thợ khuôn sửa chữa. Hạn chót: {deadline_str}."
+        )
+    elif status == "NCC đã lấy khuôn":
+        create_zalo_notification(
+            db,
+            recipient="Quản lý",
+            message=f"[NCC BẢO HÀNH] Bàn giao khuôn {code} ({db_mold.name}) cho NCC {db_mold.supplier}. Tình trạng NCC: {supplier_pickup_status or 'Không xác định'}. Hạn chót trả hàng: {deadline_str}. Lỗi kỹ thuật: {description}."
+        )
     
     return db_mold
 
@@ -156,6 +203,19 @@ def accept_mold(
         notes=f"Khách duyệt nghiệm thu: {feedback}",
         technician=technician
       )
+
+    # Gửi Zalo thông báo
+    create_zalo_notification(
+        db,
+        recipient="Quản lý",
+        message=f"[NGHIỆM THU - PHÊ DUYỆT] Khách hàng đã nghiệm thu đạt khuôn {code} ({db_mold.name}) và đưa vào sản xuất đại trà. Ý kiến: {feedback}.",
+        image_url=image_url
+    )
+    create_zalo_notification(
+        db,
+        recipient="Thợ khuôn",
+        message=f"[THÔNG BÁO] Khuôn mẫu {code} ({db_mold.name}) do bạn phụ trách/chỉnh sửa đã được khách hàng duyệt nghiệm thu thành công!"
+    )
     
     return db_mold
 
@@ -212,3 +272,21 @@ def get_dashboard_stats(db: Session) -> Dict:
 def delete_mold(db: Session, mold: models.Mold):
     db.delete(mold)
     db.commit()
+
+def create_zalo_notification(db: Session, recipient: str, message: str, image_url: Optional[str] = None) -> models.ZaloNotification:
+    db_notif = models.ZaloNotification(
+        recipient=recipient,
+        message=message,
+        image_url=image_url
+    )
+    db.add(db_notif)
+    db.commit()
+    db.refresh(db_notif)
+    
+    # In ra console để mô phỏng và kiểm tra
+    print(f"\n📢 [ZALO NOTIFICATION SYSTEM] Gửi tới: {recipient}")
+    print(f"💬 Nội dung: {message}")
+    if image_url:
+        print(f"🖼️ Hình ảnh đính kèm: {image_url}")
+    print("----------------------------------------\n")
+    return db_notif

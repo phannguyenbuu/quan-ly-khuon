@@ -14,6 +14,15 @@ interface TransactionLog {
   created_at: string;
 }
 
+interface ZaloNotification {
+  id: number;
+  recipient: string;
+  message: string;
+  image_url?: string;
+  status: string;
+  created_at: string;
+}
+
 interface ErrorLog {
   id: number;
   mold_code: string;
@@ -95,6 +104,7 @@ export default function App() {
     status: 'checking',
     database: 'Checking status...'
   });
+  const [zaloNotifs, setZaloNotifs] = useState<ZaloNotification[]>([]);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -179,6 +189,18 @@ export default function App() {
     }
   };
 
+  const fetchZaloNotifications = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/zalo-notifications`);
+      if (res.ok) {
+        const data = await res.json();
+        setZaloNotifs(data);
+      }
+    } catch (e) {
+      console.error("Lỗi khi tải thông báo Zalo:", e);
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/dashboard`);
@@ -220,6 +242,7 @@ export default function App() {
     fetchDbStatus();
     fetchStats();
     fetchMolds();
+    fetchZaloNotifications();
   }, []);
 
   // Reload data based on active tab
@@ -228,6 +251,8 @@ export default function App() {
       fetchStats();
     } else if (activeTab === 'lookup') {
       fetchMolds(searchQuery, filterStatus);
+    } else if (activeTab === 'config') {
+      fetchZaloNotifications();
     }
   }, [activeTab]);
 
@@ -685,7 +710,7 @@ export default function App() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="nav-icon"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           Tra Cứu & Dữ Liệu
         </button>
-        <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => { setActiveTab('config'); fetchDbStatus(); }}>
+        <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => { setActiveTab('config'); fetchDbStatus(); fetchZaloNotifications(); }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="nav-icon"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
           Cấu Hình & Đồng Bộ
         </button>
@@ -1121,36 +1146,76 @@ export default function App() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ width: '24px', height: '24px' }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Tích Hợp Hệ Thống Thông Báo Zalo (Conceptual)</h3>
-                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Kế hoạch kết nối tự động với nhân sự phụ trách khuôn mẫu qua số điện thoại/Zalo</p>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Tích Hợp Hệ Thống Thông Báo Zalo</h3>
+                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Mô phỏng tin nhắn Zalo gửi tự động cho Thợ khuôn, QC thử khuôn, và Quản lý</p>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div>
-                  <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>CẤU HÌNH NHẬN TIN NHẮN ZALO</h4>
-                  <ul style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8' }}>
-                    <li><strong>Thợ khuôn:</strong> Tự động nhận tin nhắn Zalo kèm mã khuôn, vị trí lỗi và hạn chót (deadline) khi xưởng phân công sửa chữa.</li>
-                    <li><strong>QC thử khuôn:</strong> QC gửi nhanh kết quả (Đạt / Không đạt) kèm hình ảnh sản phẩm lỗi, chú thích kỹ thuật trực tiếp tới nhóm Zalo quản lý.</li>
-                    <li><strong>Quản lý:</strong> Nắm thông tin báo cáo tổng quan hằng ngày, nhắc nhở hạn chót xử lý trễ hạn của các khuôn trong xưởng.</li>
-                  </ul>
-                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px' }}>
-                      <input type="checkbox" defaultChecked style={{ width: '100%', height: '100%', cursor: 'pointer' }} />
-                    </div>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Gửi tin nhắn Zalo mô phỏng đang hoạt động</span>
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>NHÂN SỰ VÀ KỊCH BẢN THÔNG BÁO</h4>
+                    <ul style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8' }}>
+                      <li><strong>Thợ khuôn:</strong> Tự động nhận tin nhắn Zalo khi được phân công sửa chữa (kèm lỗi, vị trí hỏng và deadline hoàn thành).</li>
+                      <li><strong>QC thử khuôn:</strong>QC gửi nhanh kết quả Đạt / Không đạt chạy thử mẫu khuôn, đính kèm hình ảnh và chú thích kỹ thuật trực tiếp tới nhóm.</li>
+                      <li><strong>Quản lý:</strong> Nắm thông tin báo cáo tổng quan thời gian thực và nhắc nhở các sự cố trễ hạn xử lý.</li>
+                    </ul>
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>TỔNG QUAN TÍNH NĂNG CHÍNH HỆ THỐNG (5 DÒNG)</h4>
+                    <ol style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8', listStyleType: 'decimal' }}>
+                      <li>Quản lý vòng đời khuôn mẫu trực quan từ khâu nhập kho, chạy thử, báo lỗi cho đến khi bàn giao sản xuất.</li>
+                      <li>Cập nhật quy trình chạy thử linh hoạt, phân tách rõ ràng chế độ tự sửa chữa hoặc gửi nhà cung cấp bảo hành.</li>
+                      <li>Theo dõi chi tiết sự cố kỹ thuật qua nhật ký báo lỗi trực quan kèm hình ảnh (hỗ trợ Ctrl+V) và tệp đính kèm.</li>
+                      <li>Quản lý trực tiếp thời hạn (deadline) sửa chữa và trạng thái lấy khuôn của nhà cung cấp trên bảng điều khiển.</li>
+                      <li>Hệ thống thống kê dashboard thông minh và xuất báo cáo CSV phục vụ quản lý và ra quyết định thời gian thực.</li>
+                    </ol>
                   </div>
                 </div>
 
-                <div>
-                  <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>TỔNG QUAN TÍNH NĂNG CHÍNH HỆ THỐNG (5 DÒNG TÍNH NĂNG CHÍNH)</h4>
-                  <ol style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8', listStyleType: 'decimal' }}>
-                    <li>Quản lý vòng đời khuôn mẫu trực quan từ khâu nhập kho, chạy thử, báo lỗi cho đến khi bàn giao sản xuất.</li>
-                    <li>Cập nhật quy trình chạy thử linh hoạt, phân tách rõ ràng chế độ tự sửa chữa hoặc gửi nhà cung cấp bảo hành.</li>
-                    <li>Theo dõi chi tiết sự cố kỹ thuật qua nhật ký báo lỗi trực quan kèm hình ảnh (hỗ trợ Ctrl+V) và tệp đính kèm.</li>
-                    <li>Quản lý trực tiếp thời hạn (deadline) sửa chữa và trạng thái lấy khuôn của nhà cung cấp trên bảng điều khiển.</li>
-                    <li>Hệ thống thống kê dashboard thông minh và xuất báo cáo CSV phục vụ quản lý và ra quyết định thời gian thực.</li>
-                  </ol>
+                <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', margin: 0 }}>LỊCH SỬ TIN NHẮN ZALO ĐÃ GỬI ({zaloNotifs.length})</h4>
+                    <button type="button" className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={fetchZaloNotifications}>
+                      Tải lại
+                    </button>
+                  </div>
+
+                  <div style={{ height: '300px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '12px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {zaloNotifs.length === 0 ? (
+                      <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px', marginTop: '100px' }}>
+                        Chưa có thông báo Zalo nào được kích hoạt. Hãy thử tạo mới khuôn hoặc cập nhật trạng thái khuôn (Thử khuôn, Nhà máy tự sửa, Ký duyệt...).
+                      </div>
+                    ) : (
+                      zaloNotifs.map(notif => {
+                        let recipientColor = '#0369a1';
+                        if (notif.recipient === 'Thợ khuôn') recipientColor = '#ea580c';
+                        else if (notif.recipient === 'QC') recipientColor = '#1d4ed8';
+
+                        return (
+                          <div key={notif.id} style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px', boxShadow: 'var(--shadow-sm)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px' }}>
+                              <span style={{ fontWeight: 700, color: recipientColor, backgroundColor: recipientColor + '15', padding: '2px 6px', borderRadius: '4px' }}>
+                                Gửi: {notif.recipient}
+                              </span>
+                              <span style={{ color: 'var(--text-secondary)' }}>
+                                {formatTime(notif.created_at)}
+                              </span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-primary)', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                              {notif.message}
+                            </p>
+                            {notif.image_url && (
+                              <div style={{ marginTop: '8px', cursor: 'pointer' }} onClick={() => setLightboxImgUrl(`${API_BASE}${notif.image_url}`)}>
+                                <img src={`${API_BASE}${notif.image_url}`} alt="Zalo attachment" style={{ maxWidth: '80px', maxHeight: '60px', borderRadius: '4px', border: '1px solid var(--border-color)', objectFit: 'cover' }} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
