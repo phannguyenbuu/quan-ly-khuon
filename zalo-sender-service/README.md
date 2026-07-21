@@ -1,33 +1,33 @@
-# 💬 Standalone Zalo Sender API Service
+# 💬 Standalone Zalo Sender API Service (https://zl.n-lux.com)
 
-Microservice độc lập chuyên phục vụ gửi tin nhắn Zalo (Văn bản + Hình ảnh + File đính kèm) qua HTTP REST API.
+Microservice độc lập chuyên phục vụ gửi tin nhắn Zalo (Văn bản + Hình ảnh + File đính kèm) qua HTTP/HTTPS REST API.
 
 ---
 
-## 🚀 Tính Năng Chính
-1. **API gửi tin nhắn đơn & hàng loạt:** `POST /api/send`, `POST /api/send-batch`
-2. **Giao diện Web Quét mã QR Login:** Bấm mở `http://<VPS_IP>:8020/qr` để quét QR bằng Zalo Mobile app bất cứ lúc nào.
-3. **Tự động theo dõi trạng thái phiên:** `GET /api/status` báo ngay nếu tài khoản chưa đăng nhập hoặc hết hạn `zpw_sek`.
-4. **Kiểm tra danh sách cuộc trò chuyện:** `GET /api/threads`
+## 🚀 Domain & SSL Trực Tuyến
+* **Domain chính thức (HTTPS):** `https://zl.n-lux.com`
+* **Cổng dịch vụ nội bộ:** `8020`
+* **Swagger API Docs (Trực quan):** `https://zl.n-lux.com/docs`
+* **Giao diện Web Quét Mã QR Login:** `https://zl.n-lux.com/qr`
 
 ---
 
 ## 📡 Chi Tiết REST API Endpoints
 
-### 1. Gửi tin nhắn Zalo (`POST /api/send`)
+### 1. Gửi tin nhắn Zalo (`POST https://zl.n-lux.com/api/send`)
 **Header:** `Content-Type: application/json`  
-**Body:**
+**Body mẫu (JSON):**
 ```json
 {
   "thread_id": "2230614315317765177",
-  "content": "Thông báo: Khuôn MK-NAP-24 đã hoàn thành sửa chữa!",
+  "content": "Thông báo từ Zalo Standalone API Service: Kiểm tra tiến độ xưởng khuôn",
   "image_url": "http://31.97.76.62:8001/uploads/sample.jpg",
   "thread_type": "user"
 }
 ```
 
-### 2. Gửi hàng loạt (`POST /api/send-batch`)
-**Body:**
+### 2. Gửi hàng loạt (`POST https://zl.n-lux.com/api/send-batch`)
+**Body mẫu (JSON):**
 ```json
 {
   "thread_ids": ["2230614315317765177", "3740402378099889445"],
@@ -36,7 +36,7 @@ Microservice độc lập chuyên phục vụ gửi tin nhắn Zalo (Văn bản 
 }
 ```
 
-### 3. Kiểm tra trạng thái (`GET /api/status`)
+### 3. Kiểm tra trạng thái kết nối (`GET https://zl.n-lux.com/api/status`)
 **Response:**
 ```json
 {
@@ -48,22 +48,13 @@ Microservice độc lập chuyên phục vụ gửi tin nhắn Zalo (Văn bản 
 }
 ```
 
-### 4. Quét mã QR đăng nhập (`GET /qr`)
-Mở trình duyệt truy cập: `http://31.97.76.62:8020/qr`
+### 4. Quét mã QR đăng nhập (`GET https://zl.n-lux.com/qr`)
+Mở trình duyệt truy cập: `https://zl.n-lux.com/qr`
 
 ---
 
 ## ⚙️ Cài Đặt & Chạy Trên VPS (PM2)
 ```bash
-# 1. Chép thư mục dịch vụ vào VPS
-mkdir -p /opt/zalo-sender-service
-cd /opt/zalo-sender-service
-
-# 2. Tạo virtualenv và cài dependencies
-python3 -m venv venv
-./venv/bin/pip install -r requirements.txt
-
-# 3. Quản lý bằng PM2
-pm2 start "venv/bin/uvicorn main:app --host 0.0.0.0 --port 8020" --name "zalo-sender-service"
-pm2 save
+# Quản lý bằng PM2
+pm2 restart zalo-sender-service
 ```
