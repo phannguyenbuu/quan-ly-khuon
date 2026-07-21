@@ -289,4 +289,62 @@ def create_zalo_notification(db: Session, recipient: str, message: str, image_ur
     if image_url:
         print(f"🖼️ Hình ảnh đính kèm: {image_url}")
     print("----------------------------------------\n")
+
+    # Gửi tin nhắn thực qua zalo-gateway nếu được cấu hình
+    import os
+    import urllib.request
+    import json
+    
+    gateway_url = os.getenv("ZALO_GATEWAY_URL", "").strip()
+    if gateway_url:
+        thread_id = None
+        thread_type = "user"
+        if recipient == "Quản lý":
+            thread_id = os.getenv("ZALO_THREAD_QUAN_LY")
+            thread_type = os.getenv("ZALO_THREAD_TYPE_QUAN_LY", "user")
+        elif recipient == "Thợ khuôn":
+            thread_id = os.getenv("ZALO_THREAD_THO_KHUON")
+            thread_type = os.getenv("ZALO_THREAD_TYPE_THO_KHUON", "user")
+        elif recipient == "QC":
+            thread_id = os.getenv("ZALO_THREAD_QC")
+            thread_type = os.getenv("ZALO_THREAD_TYPE_QC", "user")
+            
+        if thread_id:
+            try:
+                payload = {
+                    "thread_id": thread_id,
+                    "thread_type": thread_type,
+                    "content": message
+                }
+                
+                # Nếu có hình ảnh, thêm thông số ảnh (hỗ trợ cả link tuyệt đối và tương đối)
+                if image_url:
+                    full_image_url = image_url
+                    if image_url.startswith("/"):
+                        app_url = os.getenv("APP_PUBLIC_URL", "http://31.97.76.62:8001")
+                        full_image_url = f"{app_url.rstrip('/')}{image_url}"
+                    payload["image_url"] = full_image_url
+                
+                endpoint = "/api/send" if "8020" in gateway_url or "api" in gateway_url else "/messages/send"
+                req_url = f"{gateway_url.rstrip('/')}{endpoint}" if not gateway_url.endswith(endpoint) else gateway_url
+                
+                req_headers = {
+                    "Content-Type": "application/json",
+                    "X-Zalo-Connection-Key": os.getenv("ZALO_CONNECTION_KEY", "default")
+                }
+                
+                req = urllib.request.Request(
+                    req_url, 
+                    data=json.dumps(payload).encode("utf-8"), 
+                    headers=req_headers,
+                    method="POST"
+                )
+                
+                # Gọi API với timeout ngắn để tránh chặn luồng chính
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    res_body = response.read().decode("utf-8")
+                    print(f"🚀 [ZALO GATEWAY SUCCESS] Response: {res_body}")
+            except Exception as e:
+                print(f"⚠️ [ZALO GATEWAY ERROR] Gửi tin thất bại: {e}")
+                
     return db_notif
