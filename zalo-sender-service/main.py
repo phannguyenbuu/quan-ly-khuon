@@ -141,27 +141,30 @@ async def home_dashboard():
 
 @app.get("/api/status")
 async def get_service_status():
-    """Returns service health and Zalo login status."""
+    """Returns service health and Zalo login status (Strict Privacy Mode)."""
     res = await gateway_request("GET", "/health")
     if not res["ok"]:
         return {
             "status": "error",
             "connected": False,
             "message": "Không thể kết nối đến Zalo Gateway core",
-            "detail": res["data"]
+            "detail": "Gateway offline"
         }
     
     gw_data = res["data"]
     is_logged_in = bool(gw_data.get("user_id")) and bool(gw_data.get("initialized"))
+    raw_uid = str(gw_data.get("user_id", ""))
+    
+    # Mask UID for privacy protection (e.g. 223061******7765177)
+    masked_uid = f"{raw_uid[:6]}******{raw_uid[-4:]}" if len(raw_uid) > 10 else "***"
     
     return {
         "status": "connected" if is_logged_in else "needs_qr_scan",
         "connected": is_logged_in,
-        "user_id": gw_data.get("user_id", ""),
-        "account_name": gw_data.get("account_name", ""),
-        "connection_key": gw_data.get("connection_key", CONNECTION_KEY),
-        "gateway_url": GATEWAY_URL,
-        "qr_scan_url": "/qr" if not is_logged_in else None
+        "privacy_mode": "STRICT_WRITE_ONLY",
+        "user_id_masked": masked_uid if is_logged_in else None,
+        "gateway_status": "active" if is_logged_in else "inactive",
+        "qr_scan_url": f"{PUBLIC_DOMAIN}/qr" if not is_logged_in else None
     }
 
 @app.get("/qr", response_class=HTMLResponse)
@@ -349,11 +352,19 @@ async def send_batch_message(req: BatchMessageRequest, background_tasks: Backgro
 
 @app.get("/api/threads")
 async def get_recent_threads():
-    """Lists recent conversation threads."""
-    res = await gateway_request("GET", "/conversations")
-    if not res["ok"]:
-        return {"threads": []}
-    return res["data"]
+    """Blocked for privacy: Users cannot read friend list or thread history."""
+    raise HTTPException(
+        status_code=403,
+        detail="Quyền truy cập bị từ chối: Dịch vụ bảo mật chỉ cho phép gửi tin nhắn (Write-Only), không hỗ trợ đọc danh sách bạn bè hay lịch sử cuộc trò chuyện."
+    )
+
+@app.get("/api/contacts")
+async def get_contacts():
+    """Blocked for privacy: Friend list reading is disabled."""
+    raise HTTPException(
+        status_code=403,
+        detail="Quyền truy cập bị từ chối: Danh sách danh bạ cá nhân đã bị khóa vì lý do bảo mật."
+    )
 
 if __name__ == "__main__":
     import uvicorn
