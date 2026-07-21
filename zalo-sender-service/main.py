@@ -297,6 +297,21 @@ async def send_message(req: MessageSendRequest):
         "content": (req.content or "").strip()
     }
     
+# Shared Upload Directory between Host and Container
+HOST_UPLOAD_DIR = os.getenv("HOST_UPLOAD_DIR", "/opt/zalo-command-center/backend/data/uploads")
+CONTAINER_UPLOAD_DIR = os.getenv("CONTAINER_UPLOAD_DIR", "/data/uploads")
+
+@app.post("/api/send")
+async def send_message(req: MessageSendRequest):
+    """
+    Main endpoint to send Zalo messages (supports text, single image_url, multiple image_urls, or image_base64).
+    """
+    payload = {
+        "thread_id": req.thread_id.strip(),
+        "thread_type": req.thread_type or "user",
+        "content": (req.content or "").strip()
+    }
+    
     # 1. Single Image URL
     if req.image_url:
         payload["image_url"] = req.image_url.strip()
@@ -308,10 +323,12 @@ async def send_message(req: MessageSendRequest):
             if "base64," in b64_str:
                 b64_str = b64_str.split("base64,", 1)[1]
             img_bytes = base64.b64decode(b64_str)
-            tmp_filename = f"/tmp/zalo_b64_{uuid.uuid4().hex[:8]}.png"
-            with open(tmp_filename, "wb") as f:
+            fname = f"zalo_b64_{uuid.uuid4().hex[:8]}.png"
+            os.makedirs(HOST_UPLOAD_DIR, exist_ok=True)
+            host_path = os.path.join(HOST_UPLOAD_DIR, fname)
+            with open(host_path, "wb") as f:
                 f.write(img_bytes)
-            payload["image_path"] = tmp_filename
+            payload["image_path"] = f"{CONTAINER_UPLOAD_DIR}/{fname}"
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Lỗi giải mã Base64 image: {str(e)}")
 
@@ -360,16 +377,19 @@ async def send_image_file(
     """
     try:
         ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
-        tmp_path = f"/tmp/zalo_upload_{uuid.uuid4().hex[:8]}{ext}"
+        fname = f"zalo_upload_{uuid.uuid4().hex[:8]}{ext}"
+        os.makedirs(HOST_UPLOAD_DIR, exist_ok=True)
+        host_path = os.path.join(HOST_UPLOAD_DIR, fname)
+        
         content_bytes = await file.read()
-        with open(tmp_path, "wb") as f:
+        with open(host_path, "wb") as f:
             f.write(content_bytes)
 
         payload = {
             "thread_id": thread_id.strip(),
             "thread_type": thread_type or "user",
             "content": (content or "").strip(),
-            "image_path": tmp_path
+            "image_path": f"{CONTAINER_UPLOAD_DIR}/{fname}"
         }
 
         res = await gateway_request("POST", "/messages/send", payload)

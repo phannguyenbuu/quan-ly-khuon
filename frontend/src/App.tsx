@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Chart } from 'chart.js/auto';
 
-// Định nghĩa base URL động: khi dev trỏ tới port 8000, khi production dùng cùng domain
-const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : window.location.origin;
+// Định nghĩa base URL: kết nối trực tiếp tới backend VPS (hoặc tùy chỉnh qua VITE_API_URL)
+const API_BASE = import.meta.env.VITE_API_URL || 'https://mould.n-lux.com';
 
 // --- Interfaces & Types ---
 interface TransactionLog {
