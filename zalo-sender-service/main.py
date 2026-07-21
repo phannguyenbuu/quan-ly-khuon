@@ -23,6 +23,7 @@ logger = logging.getLogger("zalo-sender")
 # Configuration from Environment
 GATEWAY_URL = os.getenv("ZALO_GATEWAY_URL", "http://127.0.0.1:8090").rstrip("/")
 CONNECTION_KEY = os.getenv("ZALO_CONNECTION_KEY", "default")
+PUBLIC_DOMAIN = os.getenv("PUBLIC_DOMAIN", "https://zl.n-lux.com").rstrip("/")
 PORT = int(os.getenv("PORT", "8020"))
 HOST = os.getenv("HOST", "0.0.0.0")
 
@@ -300,7 +301,7 @@ async def send_message(req: MessageSendRequest):
         if "zpw_sek" in str(err_detail).lower() or "#600" in str(err_detail):
             raise HTTPException(
                 status_code=401,
-                detail="Zalo session expired (zpw_sek missing). Please scan QR code at /qr to log in again."
+                detail=f"Zalo session expired (zpw_sek missing). Please scan QR code at {PUBLIC_DOMAIN}/qr to log in again."
             )
         
         raise HTTPException(status_code=res["status_code"] or 500, detail=err_detail)
