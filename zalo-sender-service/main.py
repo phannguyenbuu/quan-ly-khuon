@@ -53,8 +53,10 @@ app.add_middleware(
 # Pydantic Schemas
 class MessageSendRequest(BaseModel):
     thread_id: str = Field(..., description="Zalo User ID or Group ID")
-    content: str = Field(..., description="Message text content")
-    image_url: Optional[str] = Field(None, description="Optional public image URL to attach")
+    content: Optional[str] = Field("", description="Message text content")
+    image_url: Optional[str] = Field(None, description="Optional single image URL")
+    image_urls: Optional[List[str]] = Field(None, description="Optional list of image URLs")
+    image_base64: Optional[str] = Field(None, description="Optional Base64 encoded image string")
     thread_type: Optional[str] = Field("user", description="Type of thread: 'user' or 'group'")
 
 class BatchMessageRequest(BaseModel):
@@ -280,20 +282,40 @@ async def check_qr_status(session_id: str):
     res = await gateway_request("GET", f"/auth/qr/status/{session_id}")
     return res["data"]
 
+import base64
+import uuid
+from fastapi import UploadFile, File, Form
+
 @app.post("/api/send")
 async def send_message(req: MessageSendRequest):
     """
-    Main endpoint to send Zalo messages (text with optional image).
+    Main endpoint to send Zalo messages (supports text, single image_url, multiple image_urls, or image_base64).
     """
     payload = {
         "thread_id": req.thread_id.strip(),
         "thread_type": req.thread_type or "user",
-        "content": req.content.strip()
+        "content": (req.content or "").strip()
     }
+    
+    # 1. Single Image URL
     if req.image_url:
         payload["image_url"] = req.image_url.strip()
+    
+    # 2. Base64 Image
+    elif req.image_base64:
+        try:
+            b64_str = req.image_base64
+            if "base64," in b64_str:
+                b64_str = b64_str.split("base64,", 1)[1]
+            img_bytes = base64.b64decode(b64_str)
+            tmp_filename = f"/tmp/zalo_b64_{uuid.uuid4().hex[:8]}.png"
+            with open(tmp_filename, "wb") as f:
+                f.write(img_bytes)
+            payload["image_path"] = tmp_filename
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Lỗi giải mã Base64 image: {str(e)}")
 
-    logger.info(f"Sending message to thread {req.thread_id} (type: {req.thread_type})...")
+    logger.info(f"Sending message/image to thread {req.thread_id} (type: {req.thread_type})...")
     res = await gateway_request("POST", "/messages/send", payload)
 
     if not res["ok"]:
@@ -309,12 +331,60 @@ async def send_message(req: MessageSendRequest):
         
         raise HTTPException(status_code=res["status_code"] or 500, detail=err_detail)
 
+    # If multiple image_urls provided, send remaining images sequentially
+    if req.image_urls and len(req.image_urls) > 0:
+        for extra_url in req.image_urls:
+            extra_payload = {
+                "thread_id": req.thread_id.strip(),
+                "thread_type": req.thread_type or "user",
+                "image_url": extra_url.strip()
+            }
+            await gateway_request("POST", "/messages/send", extra_payload)
+
     return {
         "ok": True,
-        "message": "Tin nhắn Zalo đã được gửi thành công!",
+        "message": "Tin nhắn và hình ảnh Zalo đã được gửi thành công!",
         "thread_id": req.thread_id,
         "result": res["data"]
     }
+
+@app.post("/api/send-image-file")
+async def send_image_file(
+    thread_id: str = Form(...),
+    thread_type: str = Form("user"),
+    content: Optional[str] = Form(""),
+    file: UploadFile = File(...)
+):
+    """
+    Direct File Upload endpoint: Send an image file uploaded directly from client/phone to Zalo thread.
+    """
+    try:
+        ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
+        tmp_path = f"/tmp/zalo_upload_{uuid.uuid4().hex[:8]}{ext}"
+        content_bytes = await file.read()
+        with open(tmp_path, "wb") as f:
+            f.write(content_bytes)
+
+        payload = {
+            "thread_id": thread_id.strip(),
+            "thread_type": thread_type or "user",
+            "content": (content or "").strip(),
+            "image_path": tmp_path
+        }
+
+        res = await gateway_request("POST", "/messages/send", payload)
+        if not res["ok"]:
+            err_detail = res["data"].get("detail", "Failed to send image file")
+            raise HTTPException(status_code=res["status_code"] or 500, detail=err_detail)
+
+        return {
+            "ok": True,
+            "message": f"Ảnh {file.filename} đã được gửi thành công!",
+            "thread_id": thread_id,
+            "result": res["data"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi tải và gửi tệp ảnh: {str(e)}")
 
 @app.post("/api/send-batch")
 async def send_batch_message(req: BatchMessageRequest, background_tasks: BackgroundTasks):
