@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Chart } from 'chart.js/auto';
 
-// Định nghĩa base URL linh hoạt: khi dev local trỏ về port 8000, khi production dùng cùng origin
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : window.location.origin);
+// Định nghĩa base URL động: khi dev trỏ tới port 8000, khi production dùng cùng domain
+const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : window.location.origin;
 
 // --- Interfaces & Types ---
 interface TransactionLog {
@@ -14,15 +14,6 @@ interface TransactionLog {
   created_at: string;
 }
 
-interface ZaloNotification {
-  id: number;
-  recipient: string;
-  message: string;
-  image_url?: string;
-  status: string;
-  created_at: string;
-}
-
 interface ErrorLog {
   id: number;
   mold_code: string;
@@ -30,8 +21,6 @@ interface ErrorLog {
   cause?: string;
   solution?: string;
   image_url?: string;
-  repair_deadline?: string;
-  supplier_pickup_status?: string;
   created_at: string;
 }
 
@@ -52,9 +41,6 @@ interface Mold {
   status: string;
   acceptance_date?: string;
   acceptance_feedback?: string;
-  acceptance_image_url?: string;
-  acceptance_attachment_url?: string;
-  acceptance_attachment_name?: string;
 }
 
 interface MoldDetail extends Mold {
@@ -104,7 +90,6 @@ export default function App() {
     status: 'checking',
     database: 'Checking status...'
   });
-  const [zaloNotifs, setZaloNotifs] = useState<ZaloNotification[]>([]);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,16 +108,13 @@ export default function App() {
   const [updateMoldCode, setUpdateMoldCode] = useState('');
   const [updateTechnician, setUpdateTechnician] = useState('Kỹ thuật viên');
   const [updateStatus, setUpdateStatus] = useState('');
+  
+  // Dynamic fields
   const [errorDesc, setErrorDesc] = useState('');
   const [errorCause, setErrorCause] = useState('');
   const [errorSolution, setErrorSolution] = useState('');
   const [errorImageFile, setErrorImageFile] = useState<File | null>(null);
-  const [repairDeadline, setRepairDeadline] = useState('');
-  const [supplierPickupStatus, setSupplierPickupStatus] = useState('Nhà cung cấp hẹn lấy');
-  
   const [acceptFeedback, setAcceptFeedback] = useState('');
-  const [acceptImageFile, setAcceptImageFile] = useState<File | null>(null);
-  const [acceptAttachmentFile, setAcceptAttachmentFile] = useState<File | null>(null);
   const [generalNotes, setGeneralNotes] = useState('');
 
   // MULTIPLE FILES & IMAGES UPLOAD (In Modal)
@@ -189,18 +171,6 @@ export default function App() {
     }
   };
 
-  const fetchZaloNotifications = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/zalo-notifications`);
-      if (res.ok) {
-        const data = await res.json();
-        setZaloNotifs(data);
-      }
-    } catch (e) {
-      console.error("Lỗi khi tải thông báo Zalo:", e);
-    }
-  };
-
   const fetchStats = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/dashboard`);
@@ -242,7 +212,6 @@ export default function App() {
     fetchDbStatus();
     fetchStats();
     fetchMolds();
-    fetchZaloNotifications();
   }, []);
 
   // Reload data based on active tab
@@ -251,8 +220,6 @@ export default function App() {
       fetchStats();
     } else if (activeTab === 'lookup') {
       fetchMolds(searchQuery, filterStatus);
-    } else if (activeTab === 'config') {
-      fetchZaloNotifications();
     }
   }, [activeTab]);
 
@@ -470,33 +437,22 @@ export default function App() {
         if (errorImageFile) {
           formData.append("image", errorImageFile);
         }
-        if (repairDeadline) {
-          formData.append("repair_deadline", repairDeadline);
-        }
-        if (updateStatus === 'NCC đã lấy khuôn' && supplierPickupStatus) {
-          formData.append("supplier_pickup_status", supplierPickupStatus);
-        }
 
         res = await fetch(`${API_BASE}/api/molds/${updateMoldCode}/error`, {
           method: "POST",
           body: formData
         });
       }
-      // Trạng thái KHÁCH DUYỆT (NGHIỆM THU) - HỖ TRỢ UPLOAD FILE
+      // Trạng thái KHÁCH DUYỆT (NGHIỆM THU)
       else if (updateStatus === 'Khách duyệt (Sản xuất)') {
-        const formData = new FormData();
-        formData.append("acceptance_feedback", acceptFeedback.trim());
-        formData.append("technician", updateTechnician);
-        if (acceptImageFile) {
-          formData.append("image", acceptImageFile);
-        }
-        if (acceptAttachmentFile) {
-          formData.append("attachment", acceptAttachmentFile);
-        }
-
+        const payload = {
+          acceptance_feedback: acceptFeedback.trim(),
+          technician: updateTechnician
+        };
         res = await fetch(`${API_BASE}/api/molds/${updateMoldCode}/accept`, {
           method: "POST",
-          body: formData
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
       }
       // Trạng thái THÔNG THƯỜNG (Thử khuôn / Gửi mẫu khách)
@@ -529,11 +485,7 @@ export default function App() {
         setErrorCause('');
         setErrorSolution('');
         setErrorImageFile(null);
-        setRepairDeadline('');
-        setSupplierPickupStatus('Nhà cung cấp hẹn lấy');
         setAcceptFeedback('');
-        setAcceptImageFile(null);
-        setAcceptAttachmentFile(null);
         setGeneralNotes('');
         setSelectedImages([]);
         setSelectedAttachments([]);
@@ -710,7 +662,7 @@ export default function App() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="nav-icon"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           Tra Cứu & Dữ Liệu
         </button>
-        <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => { setActiveTab('config'); fetchDbStatus(); fetchZaloNotifications(); }}>
+        <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => { setActiveTab('config'); fetchDbStatus(); }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="nav-icon"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
           Cấu Hình & Đồng Bộ
         </button>
@@ -985,12 +937,6 @@ export default function App() {
                             <p><strong>Mô tả lỗi:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].description}</p>
                             <p><strong>Nguyên nhân:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].cause || 'Chưa xác định'}</p>
                             <p><strong>Hướng xử lý:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].solution || 'Đang lập kế hoạch sửa đổi'}</p>
-                            {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].repair_deadline && (
-                              <p><strong>Hạn chót sửa chữa (Deadline):</strong> <span className="text-red" style={{ fontWeight: 600 }}>{selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].repair_deadline}</span></p>
-                            )}
-                            {selectedMoldDetail.status === 'NCC đã lấy khuôn' && selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].supplier_pickup_status && (
-                              <p><strong>Trạng thái giao nhận của NCC:</strong> <span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].supplier_pickup_status}</span></p>
-                            )}
                             
                             {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].image_url && (
                               <div className="error-image-wrapper">
@@ -1017,22 +963,6 @@ export default function App() {
                           <div className="accept-details">
                             <p><strong>Ngày phản hồi:</strong> {selectedMoldDetail.acceptance_date}</p>
                             <p><strong>Nhận xét:</strong> {selectedMoldDetail.acceptance_feedback}</p>
-                            {selectedMoldDetail.acceptance_image_url && (
-                              <div className="error-image-wrapper" style={{ marginTop: '10px' }}>
-                                <p className="img-label">📸 Hình ảnh mẫu nghiệm thu:</p>
-                                <div className="image-zoom-box" onClick={() => setLightboxImgUrl(`${API_BASE}${selectedMoldDetail.acceptance_image_url}`)} style={{ cursor: 'pointer' }}>
-                                  <img src={`${API_BASE}${selectedMoldDetail.acceptance_image_url}`} alt="Ảnh mẫu nghiệm thu đạt" />
-                                </div>
-                              </div>
-                            )}
-                            {selectedMoldDetail.acceptance_attachment_url && (
-                              <div className="attachment-item" style={{ marginTop: '10px', backgroundColor: '#ffffff' }}>
-                                <a href={`${API_BASE}${selectedMoldDetail.acceptance_attachment_url}`} target="_blank" rel="noreferrer" className="attach-link" title="Tải tài liệu biên bản">
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="attach-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-                                  {selectedMoldDetail.acceptance_attachment_name || 'Biên bản nghiệm thu đính kèm'}
-                                </a>
-                              </div>
-                            )}
                           </div>
                         </div>
                       )}
@@ -1138,87 +1068,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-
-            {/* TÍCH HỢP THÔNG BÁO ZALO & TỔNG QUAN TÍNH NĂNG */}
-            <div className="zalo-integration-container" style={{ marginTop: '24px', backgroundColor: '#ffffff', borderRadius: 'var(--radius-md)', padding: '24px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ backgroundColor: '#e0f2fe', padding: '10px', borderRadius: '50%', color: '#0284c7' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ width: '24px', height: '24px' }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Tích Hợp Hệ Thống Thông Báo Zalo</h3>
-                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Mô phỏng tin nhắn Zalo gửi tự động cho Thợ khuôn, QC thử khuôn, và Quản lý</p>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                <div>
-                  <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>NHÂN SỰ VÀ KỊCH BẢN THÔNG BÁO</h4>
-                    <ul style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8' }}>
-                      <li><strong>Thợ khuôn:</strong> Tự động nhận tin nhắn Zalo khi được phân công sửa chữa (kèm lỗi, vị trí hỏng và deadline hoàn thành).</li>
-                      <li><strong>QC thử khuôn:</strong>QC gửi nhanh kết quả Đạt / Không đạt chạy thử mẫu khuôn, đính kèm hình ảnh và chú thích kỹ thuật trực tiếp tới nhóm.</li>
-                      <li><strong>Quản lý:</strong> Nắm thông tin báo cáo tổng quan thời gian thực và nhắc nhở các sự cố trễ hạn xử lý.</li>
-                    </ul>
-                  </div>
-
-                  <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>TỔNG QUAN TÍNH NĂNG CHÍNH HỆ THỐNG (5 DÒNG)</h4>
-                    <ol style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8', listStyleType: 'decimal' }}>
-                      <li>Quản lý vòng đời khuôn mẫu trực quan từ khâu nhập kho, chạy thử, báo lỗi cho đến khi bàn giao sản xuất.</li>
-                      <li>Cập nhật quy trình chạy thử linh hoạt, phân tách rõ ràng chế độ tự sửa chữa hoặc gửi nhà cung cấp bảo hành.</li>
-                      <li>Theo dõi chi tiết sự cố kỹ thuật qua nhật ký báo lỗi trực quan kèm hình ảnh (hỗ trợ Ctrl+V) và tệp đính kèm.</li>
-                      <li>Quản lý trực tiếp thời hạn (deadline) sửa chữa và trạng thái lấy khuôn của nhà cung cấp trên bảng điều khiển.</li>
-                      <li>Hệ thống thống kê dashboard thông minh và xuất báo cáo CSV phục vụ quản lý và ra quyết định thời gian thực.</li>
-                    </ol>
-                  </div>
-                </div>
-
-                <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>LỊCH SỬ TIN NHẮN ZALO ĐÃ GỬI ({zaloNotifs.length})</h4>
-                    <button type="button" className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={fetchZaloNotifications}>
-                      Tải lại
-                    </button>
-                  </div>
-
-                  <div style={{ height: '300px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '12px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {zaloNotifs.length === 0 ? (
-                      <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px', marginTop: '100px' }}>
-                        Chưa có thông báo Zalo nào được kích hoạt. Hãy thử tạo mới khuôn hoặc cập nhật trạng thái khuôn (Thử khuôn, Nhà máy tự sửa, Ký duyệt...).
-                      </div>
-                    ) : (
-                      zaloNotifs.map(notif => {
-                        let recipientColor = '#0369a1';
-                        if (notif.recipient === 'Thợ khuôn') recipientColor = '#ea580c';
-                        else if (notif.recipient === 'QC') recipientColor = '#1d4ed8';
-
-                        return (
-                          <div key={notif.id} style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px', boxShadow: 'var(--shadow-sm)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px' }}>
-                              <span style={{ fontWeight: 600, color: recipientColor, backgroundColor: recipientColor + '15', padding: '2px 6px', borderRadius: '4px' }}>
-                                Gửi: {notif.recipient}
-                              </span>
-                              <span style={{ color: 'var(--text-secondary)' }}>
-                                {formatTime(notif.created_at)}
-                              </span>
-                            </div>
-                            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-primary)', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
-                              {notif.message}
-                            </p>
-                            {notif.image_url && (
-                              <div style={{ marginTop: '8px', cursor: 'pointer' }} onClick={() => setLightboxImgUrl(`${API_BASE}${notif.image_url}`)}>
-                                <img src={`${API_BASE}${notif.image_url}`} alt="Zalo attachment" style={{ maxWidth: '80px', maxHeight: '60px', borderRadius: '4px', border: '1px solid var(--border-color)', objectFit: 'cover' }} />
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
           </section>
         )}
       </main>
@@ -1229,17 +1078,8 @@ export default function App() {
       {isModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {modalMode === 'new' ? 'KHAI BÁO KHUÔN NHẬP KHO MỚI' : 'CẬP NHẬT QUY TRÌNH CHẠY THỬ / SỬA KHUÔN'}
-                </h2>
-                <p className="modal-header-hint" style={{ margin: '6px 0 0 0', fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                  {modalMode === 'new' 
-                    ? '💡 Khai báo thông tin mã khuôn, đơn vị chế tạo, ngày nhập kho và đính kèm hình ảnh/tài liệu (có thể bấm Ctrl+V dán ảnh nhanh).'
-                    : '💡 Chọn mã khuôn cần xử lý, cập nhật trạng thái quy trình (Thử khuôn, Tự sửa, NCC sửa, Khách duyệt...) và thông báo tự động tới Zalo.'}
-                </p>
-              </div>
+            <div className="modal-header">
+              <h2>{modalMode === 'new' ? 'KHAI BÁO KHUÔN NHẬP KHO MỚI' : 'CẬP NHẬT QUY TRÌNH CHẠY THỬ / SỬA KHUÔN'}</h2>
               <button className="modal-close-btn" onClick={() => setIsModalOpen(false)} title="Đóng cửa sổ">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
@@ -1376,22 +1216,6 @@ export default function App() {
                           <textarea id="error-solution" placeholder="Hướng khắc phục đề xuất (Ví dụ: Mở rộng cổng gate, xưởng tự hàn/sửa tiện)" value={errorSolution} onChange={(e) => setErrorSolution(e.target.value)}></textarea>
                         </div>
                       </div>
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label htmlFor="repair-deadline">HẠN CHÓT HOÀN THÀNH (DEADLINE) *</label>
-                          <input type="date" id="repair-deadline" required value={repairDeadline} onChange={(e) => setRepairDeadline(e.target.value)} />
-                        </div>
-                        {updateStatus === 'NCC đã lấy khuôn' && (
-                          <div className="form-group">
-                            <label htmlFor="supplier-pickup-status">TÌNH TRẠNG GIAO NHẬN CỦA NCC *</label>
-                            <select id="supplier-pickup-status" required value={supplierPickupStatus} onChange={(e) => setSupplierPickupStatus(e.target.value)}>
-                              <option value="Nhà cung cấp hẹn lấy">Nhà cung cấp hẹn lấy</option>
-                              <option value="Nhà cung cấp không lấy">Nhà cung cấp không lấy</option>
-                              <option value="Đã trả hàng sau khi sửa xong">Đã trả hàng sau khi sửa xong</option>
-                            </select>
-                          </div>
-                        )}
-                      </div>
                       <div className="form-group">
                         <label htmlFor="error-image">HÌNH ẢNH CHI TIẾT LỖI BAN ĐẦU</label>
                         <input type="file" id="error-image" accept="image/*" className="file-input-styled" onChange={(e) => setErrorImageFile(e.target.files ? e.target.files[0] : null)} />
@@ -1406,18 +1230,6 @@ export default function App() {
                       <div className="form-group">
                         <label htmlFor="accept-feedback">NHẬN XÉT CỦA KHÁCH HÀNG (KÝ DUYỆT) *</label>
                         <textarea id="accept-feedback" required placeholder="Ý kiến phản hồi từ phía khách hàng (Ví dụ: Sản phẩm đạt yêu cầu về độ bóng bề mặt và độ khít nắp hộp. Chấp thuận chạy sản xuất đại trà.)" value={acceptFeedback} onChange={(e) => setAcceptFeedback(e.target.value)}></textarea>
-                      </div>
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label htmlFor="accept-image">HÌNH ẢNH MINH HỌA NGHIỆM THU</label>
-                          <input type="file" id="accept-image" accept="image/*" className="file-input-styled" onChange={(e) => setAcceptImageFile(e.target.files ? e.target.files[0] : null)} />
-                          <p className="file-help">Tải ảnh sản phẩm mẫu nghiệm thu đạt yêu cầu</p>
-                        </div>
-                        <div className="form-group">
-                          <label htmlFor="accept-attachment">BẢN VẼ / BIÊN BẢN KÝ DUYỆT ĐÍNH KÈM</label>
-                          <input type="file" id="accept-attachment" accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" className="file-input-styled" onChange={(e) => setAcceptAttachmentFile(e.target.files ? e.target.files[0] : null)} />
-                          <p className="file-help">Đính kèm biên bản nghiệm thu hoặc bản vẽ kỹ thuật đã ký (.pdf, .zip...)</p>
-                        </div>
                       </div>
                     </div>
                   )}
