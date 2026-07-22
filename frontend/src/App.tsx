@@ -986,7 +986,7 @@ export default function App() {
                             <p><strong>Nguyên nhân:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].cause || 'Chưa xác định'}</p>
                             <p><strong>Hướng xử lý:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].solution || 'Đang lập kế hoạch sửa đổi'}</p>
                             {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].repair_deadline && (
-                              <p><strong>Hạn chót sửa chữa (Deadline):</strong> <span className="text-red" style={{ fontWeight: 700 }}>{selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].repair_deadline}</span></p>
+                              <p><strong>Hạn chót sửa chữa (Deadline):</strong> <span className="text-red" style={{ fontWeight: 600 }}>{selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].repair_deadline}</span></p>
                             )}
                             {selectedMoldDetail.status === 'NCC đã lấy khuôn' && selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].supplier_pickup_status && (
                               <p><strong>Trạng thái giao nhận của NCC:</strong> <span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].supplier_pickup_status}</span></p>
@@ -1146,7 +1146,7 @@ export default function App() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ width: '24px', height: '24px' }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Tích Hợp Hệ Thống Thông Báo Zalo</h3>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Tích Hợp Hệ Thống Thông Báo Zalo</h3>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Mô phỏng tin nhắn Zalo gửi tự động cho Thợ khuôn, QC thử khuôn, và Quản lý</p>
                 </div>
               </div>
@@ -1154,7 +1154,7 @@ export default function App() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div>
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>NHÂN SỰ VÀ KỊCH BẢN THÔNG BÁO</h4>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>NHÂN SỰ VÀ KỊCH BẢN THÔNG BÁO</h4>
                     <ul style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8' }}>
                       <li><strong>Thợ khuôn:</strong> Tự động nhận tin nhắn Zalo khi được phân công sửa chữa (kèm lỗi, vị trí hỏng và deadline hoàn thành).</li>
                       <li><strong>QC thử khuôn:</strong>QC gửi nhanh kết quả Đạt / Không đạt chạy thử mẫu khuôn, đính kèm hình ảnh và chú thích kỹ thuật trực tiếp tới nhóm.</li>
@@ -1163,7 +1163,7 @@ export default function App() {
                   </div>
 
                   <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px' }}>TỔNG QUAN TÍNH NĂNG CHÍNH HỆ THỐNG (5 DÒNG)</h4>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>TỔNG QUAN TÍNH NĂNG CHÍNH HỆ THỐNG (5 DÒNG)</h4>
                     <ol style={{ paddingLeft: '20px', fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.8', listStyleType: 'decimal' }}>
                       <li>Quản lý vòng đời khuôn mẫu trực quan từ khâu nhập kho, chạy thử, báo lỗi cho đến khi bàn giao sản xuất.</li>
                       <li>Cập nhật quy trình chạy thử linh hoạt, phân tách rõ ràng chế độ tự sửa chữa hoặc gửi nhà cung cấp bảo hành.</li>
@@ -1176,7 +1176,7 @@ export default function App() {
 
                 <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '24px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', margin: 0 }}>LỊCH SỬ TIN NHẮN ZALO ĐÃ GỬI ({zaloNotifs.length})</h4>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>LỊCH SỬ TIN NHẮN ZALO ĐÃ GỬI ({zaloNotifs.length})</h4>
                     <button type="button" className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={fetchZaloNotifications}>
                       Tải lại
                     </button>
@@ -1196,7 +1196,7 @@ export default function App() {
                         return (
                           <div key={notif.id} style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px', boxShadow: 'var(--shadow-sm)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px' }}>
-                              <span style={{ fontWeight: 700, color: recipientColor, backgroundColor: recipientColor + '15', padding: '2px 6px', borderRadius: '4px' }}>
+                              <span style={{ fontWeight: 600, color: recipientColor, backgroundColor: recipientColor + '15', padding: '2px 6px', borderRadius: '4px' }}>
                                 Gửi: {notif.recipient}
                               </span>
                               <span style={{ color: 'var(--text-secondary)' }}>
@@ -1229,8 +1229,17 @@ export default function App() {
       {isModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'new' ? 'KHAI BÁO KHUÔN NHẬP KHO MỚI' : 'CẬP NHẬT QUY TRÌNH CHẠY THỬ / SỬA KHUÔN'}</h2>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {modalMode === 'new' ? 'KHAI BÁO KHUÔN NHẬP KHO MỚI' : 'CẬP NHẬT QUY TRÌNH CHẠY THỬ / SỬA KHUÔN'}
+                </h2>
+                <p className="modal-header-hint" style={{ margin: '6px 0 0 0', fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  {modalMode === 'new' 
+                    ? '💡 Khai báo thông tin mã khuôn, đơn vị chế tạo, ngày nhập kho và đính kèm hình ảnh/tài liệu (có thể bấm Ctrl+V dán ảnh nhanh).'
+                    : '💡 Chọn mã khuôn cần xử lý, cập nhật trạng thái quy trình (Thử khuôn, Tự sửa, NCC sửa, Khách duyệt...) và thông báo tự động tới Zalo.'}
+                </p>
+              </div>
               <button className="modal-close-btn" onClick={() => setIsModalOpen(false)} title="Đóng cửa sổ">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
