@@ -65,6 +65,9 @@ class BatchMessageRequest(BaseModel):
     image_url: Optional[str] = Field(None, description="Optional image URL")
     thread_type: Optional[str] = Field("user", description="Type of thread: 'user' or 'group'")
 
+class LookupPhoneRequest(BaseModel):
+    phone: str = Field(..., description="Số điện thoại cần tìm kiếm Zalo ID")
+
 # Helper function to call gateway
 async def gateway_request(method: str, endpoint: str, data: Optional[dict] = None) -> dict:
     headers = {
@@ -439,6 +442,25 @@ async def send_batch_message(req: BatchMessageRequest, background_tasks: Backgro
         "total": len(req.thread_ids),
         "results": results
     }
+
+@app.post("/api/lookup-phone")
+async def lookup_phone(req: LookupPhoneRequest):
+    """
+    Tìm kiếm Zalo ID và Profile từ số điện thoại qua Zalo Gateway.
+    """
+    payload = {
+        "phone": req.phone.strip()
+    }
+    
+    logger.info(f"Looking up Zalo ID for phone number: {req.phone}...")
+    res = await gateway_request("POST", "/users/lookup-phone", payload)
+    
+    if not res["ok"]:
+        err_detail = res["data"].get("detail", "Không thể tra cứu số điện thoại")
+        logger.error(f"Failed to lookup phone {req.phone}: {err_detail}")
+        raise HTTPException(status_code=res["status_code"] or 500, detail=err_detail)
+        
+    return res["data"]
 
 @app.get("/api/threads")
 async def get_recent_threads():
