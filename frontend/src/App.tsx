@@ -933,9 +933,9 @@ export default function App() {
                             {selectedMoldDetail.status}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', marginTop: '6px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', marginTop: '8px' }}>
                           <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
-                          <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
                             {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
                               if (status === selectedMoldDetail.status) return null;
                               const btnClass = 
@@ -948,7 +948,23 @@ export default function App() {
                                 <button 
                                   key={status} 
                                   className={`jira-status-btn ${btnClass}`}
-                                  style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.15s ease' }}
+                                  style={{
+                                    width: '100px',
+                                    height: '100px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center',
+                                    fontSize: '11px',
+                                    padding: '8px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    lineHeight: '1.3',
+                                    fontWeight: '400',
+                                    boxSizing: 'border-box'
+                                  }}
                                   onClick={() => {
                                     setUpdateMoldCode(selectedMoldDetail.code);
                                     setUpdateStatus(status);
@@ -956,7 +972,7 @@ export default function App() {
                                     setIsModalOpen(true);
                                   }}
                                 >
-                                  Chuyển sang &ldquo;{status}&rdquo;
+                                  {status}
                                 </button>
                               );
                             })}
