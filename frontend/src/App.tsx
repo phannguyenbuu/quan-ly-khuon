@@ -886,7 +886,7 @@ export default function App() {
                               
                               {isExpanded && (
                                 <tr className="transition-buttons-subrow">
-                                  <td colSpan={4} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border-color)' }}>
+                                  <td colSpan={4} style={{ padding: '12px 16px', backgroundColor: '#e0f2fe', borderBottom: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
@@ -943,10 +943,7 @@ export default function App() {
                                                 textTransform: 'uppercase',
                                                 boxSizing: 'border-box',
                                                 overflow: 'hidden',
-                                                wordBreak: 'break-word',
-                                                backgroundColor: '#f1f5f9',
-                                                color: '#475569',
-                                                border: '1px solid #cbd5e1'
+                                                wordBreak: 'break-word'
                                               }}
                                               onClick={(e) => {
                                                 e.stopPropagation(); // Ngăn chọn lại dòng

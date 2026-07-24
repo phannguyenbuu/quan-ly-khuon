@@ -700,7 +700,7 @@ body {
 }
 
 .molds-table tbody tr.selected {
-    background-color: #f5f3ff;
+    background-color: #e0f2fe !important;
 }
 
 .detail-view-trigger {
