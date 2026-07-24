@@ -949,21 +949,27 @@ export default function App() {
                                   key={status} 
                                   className={`jira-status-btn ${btnClass}`}
                                   style={{
-                                    width: '100px',
-                                    height: '100px',
+                                    width: '50px',
+                                    height: '50px',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     textAlign: 'center',
-                                    fontSize: '11px',
-                                    padding: '8px',
-                                    borderRadius: '8px',
+                                    fontSize: '7px',
+                                    padding: '3px',
+                                    borderRadius: '4px',
                                     cursor: 'pointer',
                                     transition: 'all 0.15s ease',
-                                    lineHeight: '1.3',
-                                    fontWeight: '400',
-                                    boxSizing: 'border-box'
+                                    lineHeight: '1.1',
+                                    fontWeight: '500',
+                                    textTransform: 'uppercase',
+                                    boxSizing: 'border-box',
+                                    overflow: 'hidden',
+                                    wordBreak: 'break-word',
+                                    backgroundColor: '#f1f5f9',
+                                    color: '#475569',
+                                    border: '1px solid #cbd5e1'
                                   }}
                                   onClick={() => {
                                     setUpdateMoldCode(selectedMoldDetail.code);
