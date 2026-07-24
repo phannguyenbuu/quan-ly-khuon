@@ -1073,10 +1073,10 @@ export default function App() {
                             backgroundColor: '#e2e8f0'
                           }} />
 
-                          {selectedMoldDetail.events?.length === 0 ? (
+                          {!selectedMoldDetail.events || selectedMoldDetail.events.length === 0 ? (
                             <p className="form-empty-state" style={{ padding: '10px 0' }}>Chưa có sự kiện nào được ghi nhận.</p>
                           ) : (
-                            [...selectedMoldDetail.events]
+                            [...(selectedMoldDetail.events || [])]
                               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                               .map(event => {
                                 // Xác định màu node dựa trên event.type hoặc event.name
