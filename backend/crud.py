@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 from datetime import date, datetime
 from typing import Optional, List, Dict
 from . import models, schemas
@@ -78,6 +78,34 @@ def create_mold(db: Session, mold: schemas.MoldCreate) -> models.Mold:
     )
     
     return db_mold
+
+def update_mold_details(db: Session, old_code: str, name: str, supplier: str, new_code: str) -> models.Mold:
+    db_mold = get_mold(db, old_code)
+    if not db_mold:
+        raise ValueError("Không tìm thấy khuôn mẫu")
+        
+    if old_code != new_code:
+        # Check if new code already exists
+        exists = get_mold(db, new_code)
+        if exists:
+            raise ValueError(f"Mã khuôn '{new_code}' đã tồn tại")
+            
+        # Update references manually in events table to prevent foreign key errors
+        db.execute(text("UPDATE mold_events SET mold_code = :new_code WHERE mold_code = :old_code"), 
+                   {"new_code": new_code, "old_code": old_code})
+        db.commit()
+        
+        # Now update the primary key and general info
+        db.execute(text("UPDATE molds SET code = :new_code, name = :name, supplier = :supplier WHERE code = :old_code"), 
+                   {"new_code": new_code, "name": name, "supplier": supplier, "old_code": old_code})
+        db.commit()
+        return get_mold(db, new_code)
+    else:
+        db_mold.name = name
+        db_mold.supplier = supplier
+        db.commit()
+        db.refresh(db_mold)
+        return db_mold
 
 def update_mold_status(db: Session, code: str, status: str, notes: Optional[str], technician: str) -> Optional[models.Mold]:
     db_mold = get_mold(db, code)

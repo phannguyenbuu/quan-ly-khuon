@@ -109,6 +109,23 @@ def create_new_mold(mold: schemas.MoldCreate, db: Session = Depends(database.get
         raise HTTPException(status_code=400, detail=f"Mã khuôn '{mold.code}' đã tồn tại trong hệ thống")
     return crud.create_mold(db, mold)
 
+@app.post("/api/molds/{code}/edit")
+def edit_mold_details(code: str, req: schemas.MoldEditRequest, db: Session = Depends(database.get_db)):
+    """Chỉnh sửa thông tin chung của khuôn mẫu (mã khuôn, tên khuôn, nhà cung cấp)."""
+    try:
+        updated_mold = crud.update_mold_details(
+            db, 
+            old_code=code, 
+            name=req.name.strip(), 
+            supplier=req.supplier.strip(), 
+            new_code=req.new_code.strip().upper()
+        )
+        return updated_mold
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi hệ thống: {str(e)}")
+
 @app.post("/api/molds/{code}/update", response_model=schemas.MoldResponse)
 def update_existing_mold_status(code: str, req: schemas.MoldStatusUpdate, db: Session = Depends(database.get_db)):
     """Cập nhật tiến trình/trạng thái mới cho khuôn."""

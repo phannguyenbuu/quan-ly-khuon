@@ -49,6 +49,11 @@ class MoldDetailResponse(MoldResponse):
         from_attributes = True
 
 # --- Request Update Schemas ---
+class MoldEditRequest(BaseModel):
+    new_code: str
+    name: str
+    supplier: str
+
 class MoldStatusUpdate(BaseModel):
     status: str
     notes: Optional[str] = None
