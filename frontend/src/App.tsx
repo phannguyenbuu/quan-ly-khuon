@@ -1981,6 +1981,68 @@ export default function App() {
                 </div>
               </div>
               <div className="modal-body">
+                {/* Rule 1: circular button selector inside modal body */}
+                <div className="status-selector-section" style={{ marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    CHỌN TRẠNG THÁI CẬP NHẬT MỚI:
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center' }}>
+                    {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
+                      const isCurrent = status === molds.find(m => m.code === updateMoldCode)?.status;
+                      const isSelected = status === updateStatus;
+                      const btnClass = 
+                        status === 'Thử khuôn' ? 'trial' :
+                        status === 'Nhà máy tự sửa' ? 'selfrepair' :
+                        status === 'NCC đã lấy khuôn' ? 'supplier' :
+                        status === 'Gửi mẫu khách' ? 'sample' :
+                        status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import';
+                      
+                      const getShortName = (name: string) => {
+                        if (name === 'Thử khuôn') return 'Thử\nkhuôn';
+                        if (name === 'Nhà máy tự sửa') return 'Tự\nsửa';
+                        if (name === 'NCC đã lấy khuôn') return 'NCC\nlấy';
+                        if (name === 'Gửi mẫu khách') return 'Gửi\nmẫu';
+                        if (name === 'Khách duyệt (Sản xuất)') return 'Duyệt\nSX';
+                        return 'Nhập\nkho';
+                      };
+
+                      return (
+                        <div key={status} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', opacity: isCurrent ? 0.4 : 1 }}>
+                          <button 
+                            type="button"
+                            className={`jira-status-btn ${btnClass} ${isSelected ? 'active-select' : ''}`}
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '9px',
+                              fontWeight: '400',
+                              padding: '4px',
+                              textAlign: 'center',
+                              cursor: isCurrent ? 'not-allowed' : 'pointer',
+                              boxSizing: 'border-box',
+                              lineHeight: '1.1',
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              border: isSelected ? '2px solid #2563eb' : '1px solid rgba(0,0,0,0.1)',
+                              transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                              boxShadow: isSelected ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
+                              transition: 'all 0.2s ease'
+                            }}
+                            disabled={isCurrent}
+                            onClick={() => setUpdateStatus(status)}
+                          >
+                            {getShortName(status)}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="update-select-mold">KHUÔN CẦN CẬP NHẬT *</label>
