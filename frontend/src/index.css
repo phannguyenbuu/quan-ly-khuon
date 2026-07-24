@@ -3365,3 +3365,12 @@ body {
 .timeline-html-content strong {
     font-weight: 600;
 }
+
+/* Infographic horizontal timeline hover styles */
+.timeline-horizontal-column:hover .infographic-node-circle {
+    transform: scale(1.2) !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+}
+.timeline-horizontal-column:hover .infographic-node-title {
+    color: #0052cc !important;
+}

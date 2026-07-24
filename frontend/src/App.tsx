@@ -53,6 +53,24 @@ interface DbStatus {
 }
 
 export default function App() {
+  // Helper functions for horizontal infographic timeline
+  const getClipPath = (index: number, total: number) => {
+    if (total <= 1) return 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)';
+    if (index === 0) return 'polygon(0% 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 0% 100%)';
+    if (index === total - 1) return 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 10px 50%)';
+    return 'polygon(0% 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 0% 100%, 10px 50%)';
+  };
+
+  const getEventIcon = (event: any) => {
+    if (event.type === 'issue') return '⚠️';
+    if (event.type === 'acceptance') return '✅';
+    if (event.name === 'Thử khuôn') return '🧪';
+    if (event.name === 'Gửi mẫu khách') return '📦';
+    if (event.name === 'Nhà máy tự sửa') return '🔧';
+    if (event.name === 'NCC đã lấy khuôn') return '🚚';
+    if (event.name === 'Khuôn nhập kho') return '📥';
+    return '📝';
+  };
   // Navigation State
   const [activeTab, setActiveTab] = useState<'lookup' | 'config'>('lookup');
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -1056,98 +1074,190 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* BẢNG DÒNG THỜI GIAN SỰ KIỆN (TIMELINE CHUNG) */}
+                      {/* BẢNG DÒNG THỜI GIAN SỰ KIỆN (TIMELINE CHUNG HÌNH PHỄU / HORIZONTAL CHAIN) */}
                       <div className="detail-section" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginTop: '20px' }}>
                         <h4 style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '16px', letterSpacing: '0.05em' }}>
                           DÒNG THỜI GIAN SỰ KIỆN ({selectedMoldDetail.events?.length || 0})
                         </h4>
                         
-                        <div className="unified-timeline-wrapper" style={{ position: 'relative', paddingLeft: '24px', margin: '12px 0' }}>
-                          {/* Sợi chỉ dọc màu xám */}
-                          <div className="timeline-vertical-line" style={{
-                            position: 'absolute',
-                            left: '7px',
-                            top: '8px',
-                            bottom: '8px',
-                            width: '2px',
-                            backgroundColor: '#e2e8f0'
-                          }} />
-
+                        <div className="unified-timeline-wrapper-horizontal" style={{ 
+                          position: 'relative', 
+                          margin: '12px 0',
+                          height: '240px',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          overflowX: 'auto',
+                          padding: '0 10px',
+                          alignItems: 'center',
+                          backgroundColor: '#fcfcfd',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          WebkitOverflowScrolling: 'touch'
+                        }}>
                           {!selectedMoldDetail.events || selectedMoldDetail.events.length === 0 ? (
-                            <p className="form-empty-state" style={{ padding: '10px 0' }}>Chưa có sự kiện nào được ghi nhận.</p>
-                          ) : (
-                            [...(selectedMoldDetail.events || [])]
-                              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                              .map(event => {
-                                // Xác định màu node dựa trên event.type hoặc event.name
-                                let nodeColor = '#94a3b8'; // Mặc định xám
-                                if (event.type === 'issue') nodeColor = '#ef4444'; // Đỏ (sự cố)
-                                else if (event.type === 'acceptance') nodeColor = '#10b981'; // Xanh lá (nghiệm thu)
-                                else if (event.type === 'transaction') {
-                                  if (event.name === 'Thử khuôn') nodeColor = '#3b82f6';
-                                  else if (event.name === 'Gửi mẫu khách') nodeColor = '#f59e0b';
-                                  else if (event.name === 'Nhà máy tự sửa') nodeColor = '#f97316';
-                                  else if (event.name === 'NCC đã lấy khuôn') nodeColor = '#8b5cf6';
-                                }
+                            <p className="form-empty-state" style={{ padding: '24px 0', width: '100%', textAlign: 'center' }}>Chưa có sự kiện nào được ghi nhận.</p>
+                          ) : (() => {
+                            const sortedEvents = [...(selectedMoldDetail.events || [])]
+                              .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                            const totalEvents = sortedEvents.length;
 
-                                return (
-                                  <div 
-                                    key={event.id} 
-                                    className="timeline-node-item" 
-                                    style={{
-                                      position: 'relative',
-                                      marginBottom: '16px',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'flex-start',
-                                      gap: '12px'
-                                    }}
-                                    onClick={() => setSelectedTimelineEvent(event)}
-                                  >
-                                    {/* Node tròn */}
-                                    <div className="timeline-node-dot" style={{
-                                      position: 'absolute',
-                                      left: '-22px',
-                                      top: '4px',
-                                      width: '12px',
-                                      height: '12px',
-                                      borderRadius: '50%',
-                                      backgroundColor: 'white',
-                                      border: `3px solid ${nodeColor}`,
-                                      boxShadow: '0 0 0 2px white',
-                                      transition: 'all 0.15s ease-in-out',
-                                      zIndex: 2
-                                    }} />
+                            return sortedEvents.map((event, i) => {
+                              // Xác định màu dựa trên event.type / event.name
+                              let nodeColor = '#94a3b8'; // Mặc định xám
+                              if (event.type === 'issue') nodeColor = '#ef4444'; // Đỏ (sự cố)
+                              else if (event.type === 'acceptance') nodeColor = '#10b981'; // Xanh lá (nghiệm thu)
+                              else if (event.type === 'transaction') {
+                                if (event.name === 'Thử khuôn') nodeColor = '#3b82f6';
+                                else if (event.name === 'Gửi mẫu khách') nodeColor = '#f59e0b';
+                                else if (event.name === 'Nhà máy tự sửa') nodeColor = '#f97316';
+                                else if (event.name === 'NCC đã lấy khuôn') nodeColor = '#8b5cf6';
+                              }
 
-                                    <div className="timeline-node-body" style={{
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: '2px',
-                                      width: '100%',
-                                      padding: '8px 12px',
-                                      borderRadius: '6px',
-                                      backgroundColor: '#f8fafc',
-                                      border: '1px solid #f1f5f9',
-                                      transition: 'all 0.15s ease'
-                                    }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span className="timeline-node-title" style={{ fontWeight: '500', fontSize: '12px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+                              const isEven = i % 2 === 0;
+
+                              return (
+                                <div 
+                                  key={event.id} 
+                                  className="timeline-horizontal-column" 
+                                  style={{
+                                    width: '130px',
+                                    height: '100%',
+                                    position: 'relative',
+                                    flexShrink: 0,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => setSelectedTimelineEvent(event)}
+                                >
+                                  {/* Mắt xích rơ le (chevron segment) */}
+                                  <div className="track-segment" style={{
+                                    position: 'absolute',
+                                    left: '-4px',
+                                    right: '-4px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    height: '12px',
+                                    backgroundColor: nodeColor,
+                                    zIndex: 1,
+                                    clipPath: getClipPath(i, totalEvents)
+                                  }} />
+
+                                  {/* Dot trắng nằm giữa trục chevron */}
+                                  <div className="track-dot" style={{
+                                    position: 'absolute',
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: '#fff',
+                                    top: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    left: '50%',
+                                    zIndex: 2
+                                  }} />
+
+                                  {/* Nhánh Connector & Circle nội dung */}
+                                  {isEven ? (
+                                    <>
+                                      {/* Connector Line đi xuống */}
+                                      <div style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        height: '35px',
+                                        width: '2px',
+                                        backgroundColor: nodeColor,
+                                        zIndex: 1
+                                      }} />
+                                      {/* Cụm Circle Node đặt phía dưới */}
+                                      <div style={{
+                                        position: 'absolute',
+                                        top: 'calc(50% + 35px)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: '2px',
+                                        zIndex: 3
+                                      }}>
+                                        <div className="infographic-node-circle" style={{
+                                          width: '32px',
+                                          height: '32px',
+                                          borderRadius: '50%',
+                                          backgroundColor: nodeColor,
+                                          border: '2px solid #fff',
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: '#fff',
+                                          fontSize: '14px',
+                                          transition: 'all 0.15s ease'
+                                        }}>
+                                          {getEventIcon(event)}
+                                        </div>
+                                        <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
                                           {event.name}
                                         </span>
-                                        <span className="timeline-node-date" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                                          {formatTime(event.created_at)}
+                                        <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
+                                          {formatTime(event.created_at).split(' ')[0]}
                                         </span>
                                       </div>
-                                      {event.tagged_staff && (
-                                        <span className="timeline-node-staff" style={{ fontSize: '10px', color: '#64748b' }}>
-                                          👤 {event.tagged_staff}
+                                    </>
+                                  ) : (
+                                    <>
+                                      {/* Connector Line đi lên */}
+                                      <div style={{
+                                        position: 'absolute',
+                                        bottom: '50%',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        height: '35px',
+                                        width: '2px',
+                                        backgroundColor: nodeColor,
+                                        zIndex: 1
+                                      }} />
+                                      {/* Cụm Circle Node đặt phía trên */}
+                                      <div style={{
+                                        position: 'absolute',
+                                        bottom: 'calc(50% + 35px)',
+                                        display: 'flex',
+                                        flexDirection: 'column-reverse',
+                                        alignItems: 'center',
+                                        gap: '2px',
+                                        zIndex: 3
+                                      }}>
+                                        <div className="infographic-node-circle" style={{
+                                          width: '32px',
+                                          height: '32px',
+                                          borderRadius: '50%',
+                                          backgroundColor: nodeColor,
+                                          border: '2px solid #fff',
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: '#fff',
+                                          fontSize: '14px',
+                                          transition: 'all 0.15s ease'
+                                        }}>
+                                          {getEventIcon(event)}
+                                        </div>
+                                        <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
+                                          {event.name}
                                         </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })
-                          )}
+                                        <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
+                                          {formatTime(event.created_at).split(' ')[0]}
+                                        </span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
                     </div>
