@@ -1155,20 +1155,14 @@ export default function App() {
                                                           zIndex: 3
                                                         }}>
                                                           <div className="infographic-node-circle" style={{
-                                                            width: '32px',
-                                                            height: '32px',
+                                                            width: '18px',
+                                                            height: '18px',
                                                             borderRadius: '50%',
                                                             backgroundColor: nodeColor,
                                                             border: '2px solid #fff',
                                                             boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            color: '#fff',
-                                                            fontSize: '13px'
-                                                          }}>
-                                                            {getEventIcon(event)}
-                                                          </div>
+                                                            transition: 'all 0.15s ease'
+                                                          }} />
                                                           <span className="infographic-node-title" style={{ fontSize: '10px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '125px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                             {i === 0 ? "Ngày nhập khuôn" : event.name}
                                                           </span>
@@ -1212,20 +1206,14 @@ export default function App() {
                                                           zIndex: 3
                                                         }}>
                                                           <div className="infographic-node-circle" style={{
-                                                            width: '32px',
-                                                            height: '32px',
+                                                            width: '18px',
+                                                            height: '18px',
                                                             borderRadius: '50%',
                                                             backgroundColor: nodeColor,
                                                             border: '2px solid #fff',
                                                             boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            color: '#fff',
-                                                            fontSize: '13px'
-                                                          }}>
-                                                            {getEventIcon(event)}
-                                                          </div>
+                                                            transition: 'all 0.15s ease'
+                                                          }} />
                                                           <span className="infographic-node-title" style={{ fontSize: '10px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '125px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                             {i === 0 ? "Ngày nhập khuôn" : event.name}
                                                           </span>
