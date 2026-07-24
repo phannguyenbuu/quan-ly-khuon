@@ -1400,7 +1400,7 @@ export default function App() {
          SINGLE DATA ENTRY MODAL (Tương tự Admake)
          ========================================================================== */}
       {isModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
+        <div className="modal-backdrop" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsModalOpen(false); }}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header" style={{ display: 'flex', gap: '8px', padding: '0 24px', justifyContent: 'flex-start', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
               <button 
@@ -1685,7 +1685,7 @@ export default function App() {
          LIGHTBOX OVERLAY (Xem ảnh full-size phóng to)
          ========================================================================== */}
       {lightboxImgUrl && (
-        <div className="lightbox-backdrop" onClick={() => setLightboxImgUrl(null)}>
+        <div className="lightbox-backdrop" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLightboxImgUrl(null); }}>
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
             <button className="lightbox-close" onClick={() => setLightboxImgUrl(null)}>
               &times;
@@ -1795,7 +1795,7 @@ export default function App() {
       )}
       {/* EVENT ROLL PAGE (DRAWER / SLIDE-IN PEAK VIEW) */}
       {selectedTimelineEvent && (
-        <div className="roll-page-overlay" style={{
+        <div className="roll-page-overlay" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedTimelineEvent(null); }} style={{
           position: 'fixed',
           top: 0,
           right: 0,
@@ -1807,7 +1807,7 @@ export default function App() {
           display: 'flex',
           justifyContent: 'flex-end',
           animation: 'fadeIn 0.2s ease-out'
-        }} onClick={() => setSelectedTimelineEvent(null)}>
+        }}>
           
           <div className="roll-page-drawer" style={{
             width: '400px',
