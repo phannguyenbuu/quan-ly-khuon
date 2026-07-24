@@ -25,8 +25,35 @@ def get_molds(db: Session, search: Optional[str] = None, status: Optional[str] =
     if status and status != "Tất cả trạng thái":
         query = query.filter(models.Mold.status == status)
         
-    # Sắp xếp theo ngày nhập mới nhất
     return query.order_by(models.Mold.import_date.desc()).all()
+
+# --- Mold Event CRUD (Jira-style Activity) ---
+
+def create_mold_event(
+    db: Session,
+    mold_code: str,
+    event_type: str,
+    name: str,
+    content: Optional[str] = None,
+    tagged_staff: Optional[str] = None,
+    images: Optional[str] = None,
+    attachments: Optional[str] = None
+) -> models.MoldEvent:
+    db_event = models.MoldEvent(
+        mold_code=mold_code,
+        type=event_type,
+        name=name,
+        content=content,
+        tagged_staff=tagged_staff,
+        images=images,
+        attachments=attachments
+    )
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
+# --- Create & Update Molds ---
 
 def create_mold(db: Session, mold: schemas.MoldCreate) -> models.Mold:
     db_mold = models.Mold(
@@ -40,20 +67,14 @@ def create_mold(db: Session, mold: schemas.MoldCreate) -> models.Mold:
     db.commit()
     db.refresh(db_mold)
     
-    # Ghi nhận lịch sử giao dịch đầu tiên
-    create_transaction_log(
+    # Ghi nhận sự kiện đầu tiên
+    create_mold_event(
         db,
         mold_code=mold.code,
-        status="Khuôn nhập kho",
-        notes=f"Nhập kho thành công khuôn {mold.name} từ NCC {mold.supplier}",
-        technician="Hệ thống"
-    )
-
-    # Gửi Zalo thông báo cho Quản lý nắm tình hình chung
-    create_zalo_notification(
-        db,
-        recipient="Quản lý",
-        message=f"[CSDL TẬP TRUNG] Nhập kho khuôn mẫu mới thành công. Mã khuôn: {mold.code} | Tên khuôn: {mold.name} | Nhà cung cấp: {mold.supplier} | Ngày nhập: {mold.import_date}."
+        event_type="transaction",
+        name="Khuôn nhập kho",
+        content=f"Nhập kho thành công khuôn <strong>{mold.name}</strong> từ NCC <em>{mold.supplier}</em>",
+        tagged_staff="Hệ thống"
     )
     
     return db_mold
@@ -64,42 +85,22 @@ def update_mold_status(db: Session, code: str, status: str, notes: Optional[str]
         return None
     
     db_mold.status = status
-    
-    # Nếu chuyển đổi sang các trạng thái không còn lỗi, hoặc chuyển sang nghiệm thu, ta có thể giữ nguyên lịch sử lỗi cũ nhưng trạng thái hiển thị sẽ khác.
     db.commit()
     db.refresh(db_mold)
     
-    # Ghi nhận lịch sử
-    create_transaction_log(
+    # Ghi nhận sự kiện chuyển đổi trạng thái
+    create_mold_event(
         db,
         mold_code=code,
-        status=status,
-        notes=notes,
-        technician=technician
+        event_type="transaction",
+        name=status,
+        content=notes,
+        tagged_staff=technician
     )
-
-    # Gửi thông báo Zalo tương ứng
-    if status == "Thử khuôn":
-        create_zalo_notification(
-            db,
-            recipient="QC",
-            message=f"[QC THỬ KHUÔN] Khuôn {code} ({db_mold.name}) bắt đầu tiến hành thử nghiệm chạy mẫu. Kỹ thuật viên phụ trách: {technician}. Ghi chú thử: {notes or 'Không có ghi chú'}."
-        )
-        create_zalo_notification(
-            db,
-            recipient="Quản lý",
-            message=f"[TIẾN TRÌNH] Cập nhật: Khuôn {code} chuyển sang trạng thái 'Thử khuôn'. Kỹ thuật viên: {technician}."
-        )
-    elif status == "Gửi mẫu khách":
-        create_zalo_notification(
-            db,
-            recipient="Quản lý",
-            message=f"[TIẾN TRÌNH] Cập nhật: Khuôn {code} ({db_mold.name}) đã dập mẫu đạt và gửi mẫu thử lần 1 cho khách hàng duyệt. Kỹ thuật viên: {technician}."
-        )
     
     return db_mold
 
-def create_mold_error_log(
+def create_mold_issue_event(
     db: Session,
     code: str,
     description: str,
@@ -115,60 +116,34 @@ def create_mold_error_log(
     if not db_mold:
         return None
     
-    # Tạo bản ghi nhật ký báo lỗi mới
-    db_error = models.ErrorLog(
-        mold_code=code,
-        description=description,
-        cause=cause,
-        solution=solution,
-        image_url=image_url,
-        repair_deadline=repair_deadline,
-        supplier_pickup_status=supplier_pickup_status
-    )
-    db.add(db_error)
-    
     # Cập nhật trạng thái khuôn
     db_mold.status = status
     db.commit()
     db.refresh(db_mold)
     
-    # Tạo ghi chú lịch sử giao dịch chi tiết
-    notes_parts = [f"Báo lỗi chạy thử hỏng: {description}"]
+    # Định dạng nội dung sự cố kỹ thuật bằng HTML
+    content_parts = [f"<strong>Mô tả sự cố:</strong> {description}"]
+    if cause:
+        content_parts.append(f"<strong>Nguyên nhân:</strong> {cause}")
+    if solution:
+        content_parts.append(f"<strong>Giải pháp:</strong> {solution}")
     if repair_deadline:
-        notes_parts.append(f"Hạn chót: {repair_deadline.strftime('%d/%m/%Y')}")
+        content_parts.append(f"<strong>Hạn chót sửa chữa:</strong> <span class='text-danger'>{repair_deadline.strftime('%d/%m/%Y')}</span>")
     if supplier_pickup_status:
-        notes_parts.append(f"Tình trạng NCC: {supplier_pickup_status}")
-    notes_str = ". ".join(notes_parts)
-
-    # Ghi nhận lịch sử giao dịch
-    create_transaction_log(
+        content_parts.append(f"<strong>Tình trạng NCC:</strong> {supplier_pickup_status}")
+    
+    full_content = "<br/>".join(content_parts)
+    
+    # Ghi nhận sự kiện lỗi kỹ thuật (issue)
+    create_mold_event(
         db,
         mold_code=code,
-        status=status,
-        notes=notes_str,
-        technician=technician
+        event_type="issue",
+        name=f"Báo lỗi: {status}",
+        content=full_content,
+        tagged_staff=technician,
+        images=image_url
     )
-
-    # Gửi thông báo Zalo dựa trên chế độ tự sửa hoặc gửi nhà cung cấp
-    deadline_str = repair_deadline.strftime("%d/%m/%Y") if repair_deadline else "Không có"
-    if status == "Nhà máy tự sửa":
-        create_zalo_notification(
-            db,
-            recipient="Thợ khuôn",
-            message=f"[THỢ KHUÔN - PHÂN CÔNG] Yêu cầu tự sửa chữa sự cố khuôn {code} ({db_mold.name}). Mô tả sự cố: {description}. Nguyên nhân: {cause or 'Chưa xác định'}. Hạn chót hoàn thành (Deadline): {deadline_str}. QC báo lỗi: {technician}.",
-            image_url=image_url
-        )
-        create_zalo_notification(
-            db,
-            recipient="Quản lý",
-            message=f"[CẢNH BÁO SỰ CỐ] Khuôn {code} lỗi: {description}. Nhà máy đã phân công thợ khuôn sửa chữa. Hạn chót: {deadline_str}."
-        )
-    elif status == "NCC đã lấy khuôn":
-        create_zalo_notification(
-            db,
-            recipient="Quản lý",
-            message=f"[NCC BẢO HÀNH] Bàn giao khuôn {code} ({db_mold.name}) cho NCC {db_mold.supplier}. Tình trạng NCC: {supplier_pickup_status or 'Không xác định'}. Hạn chót trả hàng: {deadline_str}. Lỗi kỹ thuật: {description}."
-        )
     
     return db_mold
 
@@ -195,65 +170,47 @@ def accept_mold(
     db.commit()
     db.refresh(db_mold)
     
-    # Ghi nhận lịch sử giao dịch
-    create_transaction_log(
+    import json
+    attachments_json = None
+    if attachment_url and attachment_name:
+        attachments_json = json.dumps([{"name": attachment_name, "url": attachment_url}])
+    
+    # Ghi nhận sự kiện nghiệm thu (acceptance)
+    create_mold_event(
         db,
         mold_code=code,
-        status="Khách duyệt (Sản xuất)",
-        notes=f"Khách duyệt nghiệm thu: {feedback}",
-        technician=technician
-      )
-
-    # Gửi Zalo thông báo
-    create_zalo_notification(
-        db,
-        recipient="Quản lý",
-        message=f"[NGHIỆM THU - PHÊ DUYỆT] Khách hàng đã nghiệm thu đạt khuôn {code} ({db_mold.name}) và đưa vào sản xuất đại trà. Ý kiến: {feedback}.",
-        image_url=image_url
-    )
-    create_zalo_notification(
-        db,
-        recipient="Thợ khuôn",
-        message=f"[THÔNG BÁO] Khuôn mẫu {code} ({db_mold.name}) do bạn phụ trách/chỉnh sửa đã được khách hàng duyệt nghiệm thu thành công!"
+        event_type="acceptance",
+        name="Khách duyệt (Sản xuất)",
+        content=f"Khách duyệt nghiệm thu: <span class='text-success'><strong>{feedback}</strong></span>",
+        tagged_staff=technician,
+        images=image_url,
+        attachments=attachments_json
     )
     
     return db_mold
 
-# --- Transaction Log CRUD ---
-
-def create_transaction_log(db: Session, mold_code: str, status: str, notes: Optional[str], technician: str) -> models.TransactionLog:
-    db_log = models.TransactionLog(
-        mold_code=mold_code,
-        status=status,
-        notes=notes,
-        technician=technician
-    )
-    db.add(db_log)
+def delete_mold(db: Session, mold: models.Mold):
+    db.delete(mold)
     db.commit()
-    db.refresh(db_log)
-    return db_log
 
-# --- Dashboard & Statistics ---
+# --- Dashboard Statistics ---
 
 def get_dashboard_stats(db: Session) -> Dict:
     total_molds = db.query(models.Mold).count()
     testing_molds = db.query(models.Mold).filter(models.Mold.status == "Thử khuôn").count()
     
-    # Các trạng thái lỗi bao gồm 'Nhà máy tự sửa' và 'NCC đã lấy khuôn'
     error_molds = db.query(models.Mold).filter(
         models.Mold.status.in_(["Nhà máy tự sửa", "NCC đã lấy khuôn"])
     ).count()
     
     accepted_molds = db.query(models.Mold).filter(models.Mold.status == "Khách duyệt (Sản xuất)").count()
     
-    # Phân loại trạng thái khuôn (cho biểu đồ Donut)
     status_counts = db.query(
         models.Mold.status, func.count(models.Mold.code)
     ).group_by(models.Mold.status).all()
     
     status_dist = {status: count for status, count in status_counts}
     
-    # Phân bổ theo nhà cung cấp (cho biểu đồ Bar)
     supplier_counts = db.query(
         models.Mold.supplier, func.count(models.Mold.code)
     ).group_by(models.Mold.supplier).all()
@@ -268,83 +225,3 @@ def get_dashboard_stats(db: Session) -> Dict:
         "status_distribution": status_dist,
         "supplier_distribution": supplier_dist
     }
-
-def delete_mold(db: Session, mold: models.Mold):
-    db.delete(mold)
-    db.commit()
-
-def create_zalo_notification(db: Session, recipient: str, message: str, image_url: Optional[str] = None) -> models.ZaloNotification:
-    db_notif = models.ZaloNotification(
-        recipient=recipient,
-        message=message,
-        image_url=image_url
-    )
-    db.add(db_notif)
-    db.commit()
-    db.refresh(db_notif)
-    
-    # In ra console để mô phỏng và kiểm tra
-    print(f"\n📢 [ZALO NOTIFICATION SYSTEM] Gửi tới: {recipient}")
-    print(f"💬 Nội dung: {message}")
-    if image_url:
-        print(f"🖼️ Hình ảnh đính kèm: {image_url}")
-    print("----------------------------------------\n")
-
-    # Gửi tin nhắn thực qua zalo-gateway nếu được cấu hình
-    import os
-    import urllib.request
-    import json
-    
-    gateway_url = os.getenv("ZALO_GATEWAY_URL", "").strip()
-    if gateway_url:
-        thread_id = None
-        thread_type = "user"
-        if recipient == "Quản lý":
-            thread_id = os.getenv("ZALO_THREAD_QUAN_LY")
-            thread_type = os.getenv("ZALO_THREAD_TYPE_QUAN_LY", "user")
-        elif recipient == "Thợ khuôn":
-            thread_id = os.getenv("ZALO_THREAD_THO_KHUON")
-            thread_type = os.getenv("ZALO_THREAD_TYPE_THO_KHUON", "user")
-        elif recipient == "QC":
-            thread_id = os.getenv("ZALO_THREAD_QC")
-            thread_type = os.getenv("ZALO_THREAD_TYPE_QC", "user")
-            
-        if thread_id:
-            try:
-                payload = {
-                    "thread_id": thread_id,
-                    "thread_type": thread_type,
-                    "content": message
-                }
-                
-                # Nếu có hình ảnh, thêm thông số ảnh (hỗ trợ cả link tuyệt đối và tương đối)
-                if image_url:
-                    full_image_url = image_url
-                    if image_url.startswith("/"):
-                        app_url = os.getenv("APP_PUBLIC_URL", "http://31.97.76.62:8001")
-                        full_image_url = f"{app_url.rstrip('/')}{image_url}"
-                    payload["image_url"] = full_image_url
-                
-                endpoint = "/api/send" if "8020" in gateway_url or "api" in gateway_url else "/messages/send"
-                req_url = f"{gateway_url.rstrip('/')}{endpoint}" if not gateway_url.endswith(endpoint) else gateway_url
-                
-                req_headers = {
-                    "Content-Type": "application/json",
-                    "X-Zalo-Connection-Key": os.getenv("ZALO_CONNECTION_KEY", "default")
-                }
-                
-                req = urllib.request.Request(
-                    req_url, 
-                    data=json.dumps(payload).encode("utf-8"), 
-                    headers=req_headers,
-                    method="POST"
-                )
-                
-                # Gọi API với timeout ngắn để tránh chặn luồng chính
-                with urllib.request.urlopen(req, timeout=5) as response:
-                    res_body = response.read().decode("utf-8")
-                    print(f"🚀 [ZALO GATEWAY SUCCESS] Response: {res_body}")
-            except Exception as e:
-                print(f"⚠️ [ZALO GATEWAY ERROR] Gửi tin thất bại: {e}")
-                
-    return db_notif

@@ -5,33 +5,11 @@ import { Chart } from 'chart.js/auto';
 const API_BASE = import.meta.env.VITE_API_URL || 'https://mould.n-lux.com';
 
 // --- Interfaces & Types ---
-interface TransactionLog {
-  id: number;
-  mold_code: string;
-  status: string;
-  notes?: string;
-  technician: string;
-  created_at: string;
-}
 
-interface ErrorLog {
-  id: number;
-  mold_code: string;
-  description: string;
-  cause?: string;
-  solution?: string;
-  image_url?: string;
-  created_at: string;
-}
 
-interface MoldFile {
-  id: number;
-  mold_code: string;
-  file_url: string;
-  file_name: string;
-  is_attachment: boolean;
-  created_at: string;
-}
+
+
+
 
 interface Mold {
   code: string;
@@ -43,10 +21,21 @@ interface Mold {
   acceptance_feedback?: string;
 }
 
+interface MoldEvent {
+  id: number;
+  mold_code: string;
+  type: string;
+  name: string;
+  content?: string;
+  created_at: string;
+  updated_at: string;
+  tagged_staff?: string;
+  images?: string;
+  attachments?: string;
+}
+
 interface MoldDetail extends Mold {
-  transaction_logs: TransactionLog[];
-  error_logs: ErrorLog[];
-  files: MoldFile[];
+  events: MoldEvent[];
 }
 
 interface DashboardStats {
@@ -65,7 +54,16 @@ interface DbStatus {
 
 export default function App() {
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'lookup' | 'config'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'lookup' | 'config'>('lookup');
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [configSubTab, setConfigSubTab] = useState<'nhan-su' | 'nha-cung-cap' | 'trang-thai-khuon'>('nhan-su');
+  const [jiraDropdownOpen, setJiraDropdownOpen] = useState(false);
+  const [dbStaff, setDbStaff] = useState<any[]>([]);
+  const [dbStatuses, setDbStatuses] = useState<any[]>([]);
+
+  const handleLogoClick = () => {
+    setIsDashboardOpen(prev => !prev);
+  };
 
   // Modal Control States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -214,12 +212,47 @@ export default function App() {
     fetchMolds();
   }, []);
 
-  // Reload data based on active tab
+  // Reload data based on active tab & dashboard modal
   useEffect(() => {
-    if (activeTab === 'dashboard') {
-      fetchStats();
-    } else if (activeTab === 'lookup') {
+    if (activeTab === 'lookup') {
       fetchMolds(searchQuery, filterStatus);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (isDashboardOpen) {
+      fetchStats();
+    }
+  }, [isDashboardOpen]);
+
+  const fetchStaff = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/staff`);
+      if (res.ok) {
+        const data = await res.json();
+        setDbStaff(data);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách nhân sự:", err);
+    }
+  };
+
+  const fetchStatuses = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/statuses`);
+      if (res.ok) {
+        const data = await res.json();
+        setDbStatuses(data);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách trạng thái:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'config') {
+      fetchStaff();
+      fetchStatuses();
     }
   }, [activeTab]);
 
@@ -242,108 +275,112 @@ export default function App() {
 
   // --- Chart Drawing Logic ---
   useEffect(() => {
-    if (activeTab !== 'dashboard') return;
+    if (!isDashboardOpen) return;
 
-    // 1. Vẽ Donut Chart (Trạng thái)
-    if (statusChartRef.current) {
-      if (statusChartInstance.current) statusChartInstance.current.destroy();
+    const timer = setTimeout(() => {
+      // 1. Vẽ Donut Chart (Trạng thái)
+      if (statusChartRef.current) {
+        if (statusChartInstance.current) statusChartInstance.current.destroy();
 
-      const defaultLabels = ["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"];
-      const colors: Record<string, string> = {
-        "Khuôn nhập kho": "#475569",
-        "Thử khuôn": "#1d4ed8",
-        "Gửi mẫu khách": "#a16207",
-        "Nhà máy tự sửa": "#ea580c",
-        "NCC đã lấy khuôn": "#7e22ce",
-        "Khách duyệt (Sản xuất)": "#0f766e"
-      };
+        const defaultLabels = ["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"];
+        const colors: Record<string, string> = {
+          "Khuôn nhập kho": "#475569",
+          "Thử khuôn": "#1d4ed8",
+          "Gửi mẫu khách": "#a16207",
+          "Nhà máy tự sửa": "#ea580c",
+          "NCC đã lấy khuôn": "#7e22ce",
+          "Khách duyệt (Sản xuất)": "#0f766e"
+        };
 
-      const dist = stats.status_distribution || {};
-      const dataValues = defaultLabels.map(label => dist[label] || 0);
-      const bgColors = defaultLabels.map(label => colors[label]);
+        const dist = stats.status_distribution || {};
+        const dataValues = defaultLabels.map(label => dist[label] || 0);
+        const bgColors = defaultLabels.map(label => colors[label]);
 
-      const totalData = dataValues.reduce((a, b) => a + b, 0);
-      const finalData = totalData === 0 ? [1] : dataValues;
-      const finalBg = totalData === 0 ? ["#e2e8f0"] : bgColors;
-      const finalLabels = totalData === 0 ? ["Chưa có dữ liệu"] : defaultLabels;
+        const totalData = dataValues.reduce((a, b) => a + b, 0);
+        const finalData = totalData === 0 ? [1] : dataValues;
+        const finalBg = totalData === 0 ? ["#e2e8f0"] : bgColors;
+        const finalLabels = totalData === 0 ? ["Chưa có dữ liệu"] : defaultLabels;
 
-      statusChartInstance.current = new Chart(statusChartRef.current, {
-        type: 'doughnut',
-        data: {
-          labels: finalLabels,
-          datasets: [{
-            data: finalData,
-            backgroundColor: finalBg,
-            borderWidth: 2,
-            borderColor: '#ffffff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                boxWidth: 12,
-                font: { size: 11, family: 'Inter' }
+        statusChartInstance.current = new Chart(statusChartRef.current, {
+          type: 'doughnut',
+          data: {
+            labels: finalLabels,
+            datasets: [{
+              data: finalData,
+              backgroundColor: finalBg,
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 11, family: 'Inter' }
+                }
+              }
+            },
+            cutout: '65%'
+          }
+        });
+      }
+
+      // 2. Vẽ Bar Chart (Nhà cung cấp)
+      if (supplierChartRef.current) {
+        if (supplierChartInstance.current) supplierChartInstance.current.destroy();
+
+        const dist = stats.supplier_distribution || {};
+        const labels = Object.keys(dist);
+        const values = Object.values(dist);
+
+        const finalLabels = labels.length === 0 ? ["Chưa có dữ liệu"] : labels;
+        const finalValues = values.length === 0 ? [0] : values;
+
+        supplierChartInstance.current = new Chart(supplierChartRef.current, {
+          type: 'bar',
+          data: {
+            labels: finalLabels,
+            datasets: [{
+              label: 'Số lượng khuôn',
+              data: finalValues,
+              backgroundColor: '#4f35cd',
+              borderRadius: 4,
+              barPercentage: 0.5
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1,
+                  font: { size: 10, family: 'Inter' }
+                },
+                grid: { color: '#f1f5f9' }
+              },
+              x: {
+                ticks: {
+                  font: { size: 10, family: 'Inter' }
+                },
+                grid: { display: false }
               }
             }
-          },
-          cutout: '65%'
-        }
-      });
-    }
-
-    // 2. Vẽ Bar Chart (Nhà cung cấp)
-    if (supplierChartRef.current) {
-      if (supplierChartInstance.current) supplierChartInstance.current.destroy();
-
-      const dist = stats.supplier_distribution || {};
-      const labels = Object.keys(dist);
-      const values = Object.values(dist);
-
-      const finalLabels = labels.length === 0 ? ["Chưa có dữ liệu"] : labels;
-      const finalValues = values.length === 0 ? [0] : values;
-
-      supplierChartInstance.current = new Chart(supplierChartRef.current, {
-        type: 'bar',
-        data: {
-          labels: finalLabels,
-          datasets: [{
-            label: 'Số lượng khuôn',
-            data: finalValues,
-            backgroundColor: '#4f35cd',
-            borderRadius: 4,
-            barPercentage: 0.5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1,
-                font: { size: 10, family: 'Inter' }
-              },
-              grid: { color: '#f1f5f9' }
-            },
-            x: {
-              ticks: {
-                font: { size: 10, family: 'Inter' }
-              },
-              grid: { display: false }
-            }
           }
-        }
-      });
-    }
-  }, [activeTab, stats]);
+        });
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [isDashboardOpen, stats]);
 
   // --- File Upload Helper ---
   const uploadFilesForMold = async (code: string, files: File[], isAttachment: boolean) => {
@@ -438,7 +475,7 @@ export default function App() {
           formData.append("image", errorImageFile);
         }
 
-        res = await fetch(`${API_BASE}/api/molds/${updateMoldCode}/error`, {
+        res = await fetch(`${API_BASE}/api/molds/${updateMoldCode}/issue`, {
           method: "POST",
           body: formData
         });
@@ -624,19 +661,94 @@ export default function App() {
     setIsModalOpen(true);
   };
 
+  // Computed variables for compatibility with unified database schema (MoldEvent)
+  const galleryImages = selectedMoldDetail?.events
+    ? selectedMoldDetail.events
+        .filter((e: any) => e.images && e.type !== 'acceptance')
+        .flatMap((e: any) => e.images.split(',').map((img: string) => ({
+          id: e.id,
+          file_url: img.trim(),
+          file_name: img.split('/').pop() || 'image.jpg',
+          is_attachment: false
+        })))
+    : [];
+
+  const attachmentFiles = selectedMoldDetail?.events
+    ? selectedMoldDetail.events
+        .filter((e: any) => e.attachments)
+        .flatMap((e: any) => {
+          try {
+            const parsed = JSON.parse(e.attachments);
+            return Array.isArray(parsed) ? parsed.map((file: any) => ({
+              id: e.id,
+              file_url: file.url,
+              file_name: file.name,
+              is_attachment: true
+            })) : [];
+          } catch {
+            return [];
+          }
+        })
+    : [];
+
+  const errorLogs = selectedMoldDetail?.events
+    ? selectedMoldDetail.events
+        .filter((e: any) => e.type === 'issue')
+        .map((e: any) => {
+          const isHtml = e.content && e.content.includes("<strong>");
+          if (isHtml) {
+            return {
+              id: e.id,
+              description: e.content,
+              cause: "",
+              solution: "",
+              image_url: e.images,
+              created_at: e.created_at
+            };
+          }
+          const lines = e.content ? e.content.split('\n') : [];
+          const desc = lines.find((l: string) => l.startsWith("Mô tả sự cố:"))?.replace("Mô tả sự cố:", "").trim() || e.name;
+          const cause = lines.find((l: string) => l.startsWith("Nguyên nhân:"))?.replace("Nguyên nhân:", "").trim() || "";
+          const solution = lines.find((l: string) => l.startsWith("Giải pháp:"))?.replace("Giải pháp:", "").trim() || "";
+          return {
+            id: e.id,
+            description: desc,
+            cause: cause,
+            solution: solution,
+            image_url: e.images,
+            created_at: e.created_at
+          };
+        })
+    : [];
+
+  const transactionLogs = selectedMoldDetail?.events
+    ? [...selectedMoldDetail.events]
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .map((e: any) => ({
+          id: e.id,
+          status: e.name,
+          notes: e.content,
+          technician: e.tagged_staff || 'Hệ thống',
+          created_at: e.created_at
+        }))
+    : [];
+
   return (
     <div className="app-container">
       {/* HEADER */}
       <header className="app-header">
         <div className="header-left">
-          <div className="logo-box">
+          <button 
+            className="logo-box logo-box-btn"
+            onClick={handleLogoClick}
+            aria-label="Xem thống kê dashboard"
+          >
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="logo-icon">
               <path d="M4 6C4 4.89543 7.58172 4 12 4C16.4183 4 20 4.89543 20 6M4 6C4 7.10457 7.58172 8 12 8C16.4183 8 20 7.10457 20 6M4 6V12C4 13.1046 7.58172 14 12 14C16.4183 14 20 13.1046 20 12V6M4 12V18C4 19.1046 7.58172 20 12 20C16.4183 20 20 19.1046 20 18V12M20 12C20 12.1 19.98 12.2 19.95 12.3" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
             </svg>
-          </div>
+          </button>
           <div className="title-area">
-            <h1>HỆ THỐNG QUẢN LÝ KHUÔN <span className="version-badge">v1.1</span></h1>
-            <p className="subtitle">Báo cáo chạy thử, cập nhật lỗi kỹ thuật & lưu trữ database tập trung (React + TS)</p>
+            <h1>MOULD MANAGEMENT <span className="version-badge">v1.1</span></h1>
           </div>
         </div>
         <div className="header-right">
@@ -654,93 +766,18 @@ export default function App() {
 
       {/* NAVIGATION TABS */}
       <nav className="app-nav">
-        <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="nav-icon"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg>
-          Dashboard Thống Kê
-        </button>
         <button className={`nav-item ${activeTab === 'lookup' ? 'active' : ''}`} onClick={() => setActiveTab('lookup')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="nav-icon"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          Tra Cứu & Dữ Liệu
+          Dữ liệu
         </button>
         <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => { setActiveTab('config'); fetchDbStatus(); }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="nav-icon"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
-          Cấu Hình & Đồng Bộ
+          Cấu hình
         </button>
       </nav>
 
       {/* MAIN PANELS CONTENT */}
       <main className="app-main-content">
-
-        {/* 1. DASHBOARD PANEL */}
-        {activeTab === 'dashboard' && (
-          <section className="tab-panel active">
-            <div className="stats-cards-grid">
-              <div className="stats-card">
-                <div className="card-content">
-                  <span className="card-title">Tổng Số Khuôn</span>
-                  <span className="card-value">{stats.total}</span>
-                </div>
-                <div className="card-icon-box purple">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
-                </div>
-              </div>
-              <div className="stats-card">
-                <div className="card-content">
-                  <span className="card-title">Đang Thử Khuôn</span>
-                  <span className="card-value">{stats.testing}</span>
-                </div>
-                <div className="card-icon-box blue">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-                </div>
-              </div>
-              <div className="stats-card">
-                <div className="card-content">
-                  <span className="card-title">Đang Lỗi / Sửa Chữa</span>
-                  <span className="card-value">{stats.error}</span>
-                </div>
-                <div className="card-icon-box red">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                </div>
-              </div>
-              <div className="stats-card">
-                <div className="card-content">
-                  <span className="card-title">Đã Nghiệm Thu (Khách duyệt)</span>
-                  <span className="card-value">{stats.accepted}</span>
-                </div>
-                <div className="card-icon-box green">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="charts-container">
-              <div className="chart-box">
-                <div className="chart-header">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="chart-header-icon"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-                  <div>
-                    <h3>Phân Loại Trạng Thái Khuôn</h3>
-                    <p>Biểu đồ thể hiện tình trạng hoạt động thực tế của toàn bộ khuôn</p>
-                  </div>
-                </div>
-                <div className="chart-body donut-chart-container">
-                  <canvas ref={statusChartRef} id="chart-status"></canvas>
-                </div>
-              </div>
-              <div className="chart-box">
-                <div className="chart-header">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="chart-header-icon"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
-                  <div>
-                    <h3>Phân Bổ Theo Nhà Cung Cấp</h3>
-                    <p>Số lượng khuôn chế tạo và bàn giao bởi mỗi đối tác cơ khí</p>
-                  </div>
-                </div>
-                <div className="chart-body">
-                  <canvas ref={supplierChartRef} id="chart-supplier"></canvas>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* 2. LOOKUP & DATA PANEL (Split View) */}
         {activeTab === 'lookup' && (
@@ -786,13 +823,12 @@ export default function App() {
                         <th>NHÀ CUNG CẤP</th>
                         <th>NGÀY NHẬP</th>
                         <th>TRẠNG THÁI</th>
-                        <th style={{ width: '110px' }}>THAO TÁC</th>
                       </tr>
                     </thead>
                     <tbody>
                       {molds.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="form-empty-state">Không tìm thấy khuôn phù hợp.</td>
+                          <td colSpan={5} className="form-empty-state">Không tìm thấy khuôn phù hợp.</td>
                         </tr>
                       ) : (
                         molds.map(mold => {
@@ -810,22 +846,6 @@ export default function App() {
                               <td>{mold.supplier}</td>
                               <td>{mold.import_date}</td>
                               <td><span className={`status-pill ${statusClass}`}>{mold.status}</span></td>
-                              <td>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                  {/* Xem chi tiết */}
-                                  <button className="detail-view-trigger" onClick={(e) => { e.stopPropagation(); setSelectedMoldCode(mold.code); }} title="Xem hồ sơ khuôn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ width: '16px', height: '16px' }}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
-                                  </button>
-                                  {/* SỬA / CẬP NHẬT QUY TRÌNH */}
-                                  <button className="edit-icon-btn" onClick={(e) => { e.stopPropagation(); triggerQuickUpdate(mold.code); }} title="Cập nhật quy trình">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="edit-icon"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" /></svg>
-                                  </button>
-                                  {/* XÓA KHUÔN (Nút mới) */}
-                                  <button className="delete-icon-btn" onClick={(e) => { e.stopPropagation(); handleDeleteMold(mold.code); }} title="Xóa khuôn khỏi xưởng">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="edit-icon"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-                                  </button>
-                                </div>
-                              </td>
                             </tr>
                           );
                         })
@@ -841,7 +861,7 @@ export default function App() {
               </div>
 
               {/* Cột Phải: Xem chi tiết */}
-              <div className="lookup-right-pane">
+              <div className={`lookup-right-pane ${selectedMoldDetail ? 'mobile-modal-active' : 'mobile-modal-hidden'}`}>
                 {!selectedMoldDetail ? (
                   <div className="detail-empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="empty-icon"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -850,21 +870,35 @@ export default function App() {
                 ) : (
                   <div className="detail-panel-card">
                     <div className="detail-header">
-                      <div className="detail-title-block">
-                        <h2>{selectedMoldDetail.code}</h2>
+                      <div className="detail-title-block" style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                          <h2>{selectedMoldDetail.code}</h2>
+                          <button 
+                            className="detail-close-btn"
+                            onClick={() => { setSelectedMoldCode(null); setSelectedMoldDetail(null); }}
+                            title="Đóng chi tiết"
+                          >
+                            &times;
+                          </button>
+                        </div>
                         <h3>{selectedMoldDetail.name}</h3>
                         <p className="supplier-info">Nhà cung cấp: {selectedMoldDetail.supplier}</p>
                       </div>
-                      <button className="btn-badge-action" onClick={() => triggerQuickUpdate(selectedMoldDetail.code)}>
-                        Cập nhật &rarr;
-                      </button>
+                      <div className="detail-header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px', width: '100%', justifyContent: 'flex-end' }}>
+                        <button className="btn-badge-action" onClick={() => triggerQuickUpdate(selectedMoldDetail.code)}>
+                          Cập nhật &rarr;
+                        </button>
+                        <button className="btn-danger-action" onClick={() => handleDeleteMold(selectedMoldDetail.code)} title="Xóa khuôn khỏi xưởng">
+                          Xóa khuôn
+                        </button>
+                      </div>
                     </div>
 
                     {/* DÃY HÌNH THUMBNAIL (GALLERY - KIỂU ADMAKE) */}
                     <div className="properties-gallery-container">
                       <div className="properties-gallery-strip">
                         {/* Hiển thị các hình ảnh của khuôn */}
-                        {selectedMoldDetail.files?.filter(f => !f.is_attachment).map(file => (
+                        {galleryImages.map(file => (
                           <div key={file.id} className="gallery-thumbnail-wrapper" onClick={() => setLightboxImgUrl(`${API_BASE}${file.file_url}`)}>
                             <img src={`${API_BASE}${file.file_url}`} alt={file.file_name} />
                             {/* Nút Xóa ảnh gallery nhanh */}
@@ -885,18 +919,43 @@ export default function App() {
                     </div>
 
                     <div className="detail-body">
-                      {/* Trạng thái hiện tại */}
+                      {/* Trạng thái hiện tại (Jira transition dropdown) */}
                       <div className="detail-status-row">
                         <span className="info-label">Trạng thái hiện tại:</span>
-                        <span className={`status-badge-styled ${
-                          selectedMoldDetail.status === 'Thử khuôn' ? 'trial' :
-                          selectedMoldDetail.status === 'Nhà máy tự sửa' ? 'selfrepair' :
-                          selectedMoldDetail.status === 'NCC đã lấy khuôn' ? 'supplier' :
-                          selectedMoldDetail.status === 'Gửi mẫu khách' ? 'sample' :
-                          selectedMoldDetail.status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
-                        }`}>
-                          {selectedMoldDetail.status}
-                        </span>
+                        <div className="jira-status-dropdown-container">
+                          <button className={`jira-status-btn ${
+                            selectedMoldDetail.status === 'Thử khuôn' ? 'trial' :
+                            selectedMoldDetail.status === 'Nhà máy tự sửa' ? 'selfrepair' :
+                            selectedMoldDetail.status === 'NCC đã lấy khuôn' ? 'supplier' :
+                            selectedMoldDetail.status === 'Gửi mẫu khách' ? 'sample' :
+                            selectedMoldDetail.status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
+                          }`} onClick={() => setJiraDropdownOpen(prev => !prev)}>
+                            {selectedMoldDetail.status} ▾
+                          </button>
+                          {jiraDropdownOpen && (
+                            <div className="jira-dropdown-menu">
+                              <div className="dropdown-title">CHUYỂN TRẠNG THÁI (JIRA UX)</div>
+                              {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
+                                if (status === selectedMoldDetail.status) return null;
+                                return (
+                                  <button 
+                                    key={status} 
+                                    className="dropdown-item" 
+                                    onClick={() => {
+                                      setJiraDropdownOpen(false);
+                                      setUpdateMoldCode(selectedMoldDetail.code);
+                                      setUpdateStatus(status);
+                                      setModalMode('update');
+                                      setIsModalOpen(true);
+                                    }}
+                                  >
+                                    Chuyển sang &ldquo;{status}&rdquo;
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Ngày nhập kho */}
@@ -909,10 +968,10 @@ export default function App() {
                       </div>
 
                       {/* TÀI LIỆU ĐÍNH KÈM (PDF / ZIP / EXCEL) */}
-                      {selectedMoldDetail.files?.filter(f => f.is_attachment).length > 0 && (
+                      {attachmentFiles.length > 0 && (
                         <div className="attachments-list-container">
                           <h4>TÀI LIỆU ĐÍNH KÈM</h4>
-                          {selectedMoldDetail.files.filter(f => f.is_attachment).map(file => (
+                          {attachmentFiles.map(file => (
                             <div key={file.id} className="attachment-item">
                               <a href={`${API_BASE}${file.file_url}`} target="_blank" rel="noreferrer" className="attach-link" title="Mở / Tải tài liệu">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="attach-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
@@ -927,25 +986,25 @@ export default function App() {
                       )}
 
                       {/* NHẬT KÝ BÁO LỖI (Trạng thái sự cố) */}
-                      {(selectedMoldDetail.status === 'Nhà máy tự sửa' || selectedMoldDetail.status === 'NCC đã lấy khuôn') && selectedMoldDetail.error_logs?.length > 0 && (
+                      {(selectedMoldDetail.status === 'Nhà máy tự sửa' || selectedMoldDetail.status === 'NCC đã lấy khuôn') && errorLogs?.length > 0 && (
                         <div className="detail-section-box error-box">
                           <h4 className="section-title text-red">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="section-title-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                             NHẬT KÝ BÁO LỖI
                           </h4>
                           <div className="error-details">
-                            <p><strong>Mô tả lỗi:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].description}</p>
-                            <p><strong>Nguyên nhân:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].cause || 'Chưa xác định'}</p>
-                            <p><strong>Hướng xử lý:</strong> {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].solution || 'Đang lập kế hoạch sửa đổi'}</p>
+                            <p><strong>Mô tả lỗi:</strong> {errorLogs[errorLogs.length - 1].description}</p>
+                            <p><strong>Nguyên nhân:</strong> {errorLogs[errorLogs.length - 1].cause || 'Chưa xác định'}</p>
+                            <p><strong>Hướng xử lý:</strong> {errorLogs[errorLogs.length - 1].solution || 'Đang lập kế hoạch sửa đổi'}</p>
                             
-                            {selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].image_url && (
+                            {errorLogs[errorLogs.length - 1].image_url && (
                               <div className="error-image-wrapper">
                                 <p className="img-label">
                                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="img-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
                                   Hình ảnh chi tiết lỗi:
                                 </p>
-                                <div className="image-zoom-box" onClick={() => setLightboxImgUrl(`${API_BASE}${selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].image_url}`)} style={{ cursor: 'pointer' }}>
-                                  <img src={`${API_BASE}${selectedMoldDetail.error_logs[selectedMoldDetail.error_logs.length - 1].image_url}`} alt="Hình ảnh lỗi kỹ thuật" />
+                                <div className="image-zoom-box" onClick={() => setLightboxImgUrl(`${API_BASE}${errorLogs[errorLogs.length - 1].image_url}`)} style={{ cursor: 'pointer' }}>
+                                  <img src={`${API_BASE}${errorLogs[errorLogs.length - 1].image_url}`} alt="Hình ảnh lỗi kỹ thuật" />
                                 </div>
                               </div>
                             )}
@@ -962,19 +1021,19 @@ export default function App() {
                           </h4>
                           <div className="accept-details">
                             <p><strong>Ngày phản hồi:</strong> {selectedMoldDetail.acceptance_date}</p>
-                            <p><strong>Nhận xét:</strong> {selectedMoldDetail.acceptance_feedback}</p>
+                            <p dangerouslySetInnerHTML={{ __html: `<strong>Nhận xét:</strong> ${selectedMoldDetail.acceptance_feedback || ''}` }} />
                           </div>
                         </div>
                       )}
 
                       {/* LỊCH SỬ GIAO DỊCH */}
                       <div className="detail-section">
-                        <h4 id="detail-logs-count-title">NHẬT KÝ GIAO DỊCH ({selectedMoldDetail.transaction_logs?.length || 0})</h4>
+                        <h4 id="detail-logs-count-title">NHẬT KÝ GIAO DỊCH ({transactionLogs?.length || 0})</h4>
                         <div className="timeline-container">
-                          {selectedMoldDetail.transaction_logs?.length === 0 ? (
+                          {transactionLogs?.length === 0 ? (
                             <p className="form-empty-state" style={{ padding: '10px 0' }}>Chưa có sự kiện nào.</p>
                           ) : (
-                            [...selectedMoldDetail.transaction_logs]
+                            [...transactionLogs]
                               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                               .map(log => {
                                 let itemClass = "import";
@@ -1009,63 +1068,125 @@ export default function App() {
         {/* 3. CONFIGURATION PANEL */}
         {activeTab === 'config' && (
           <section className="tab-panel active">
-            <div className="config-banner-box">
-              <div className="banner-icon-wrapper">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="banner-icon"><rect x="2" y="2" width="20" height="8" rx="2" ry="2" /><rect x="2" y="14" width="20" height="8" rx="2" ry="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></svg>
-              </div>
-              <div className="banner-text">
-                <h2>Chế Độ Lưu Trữ Cơ Sở Dữ Liệu Tập Trung (PostgreSQL)</h2>
-                <p>Mọi thao tác thay đổi dữ liệu, thêm khuôn mẫu mới được lưu trữ và quản lý trực tiếp tại hệ quản trị cơ sở dữ liệu PostgreSQL trên máy chủ VPS. Đảm bảo hiệu năng ổn định, an toàn và dễ dàng mở rộng.</p>
-              </div>
-            </div>
-
-            <div className="config-grid-layout">
-              {/* Form Config */}
-              <div className="config-form-pane">
-                <h3>Cấu Hình Đường Dẫn Kết Nối</h3>
-                <form>
-                  <div className="form-group">
-                    <label htmlFor="config-db-url">POSTGRESQL DATABASE URL *</label>
-                    <input type="text" id="config-db-url" readOnly placeholder="postgresql://username:password@host:port/database" value={dbStatus.database} />
-                    <p className="field-desc">Dữ liệu đọc trực tiếp từ cấu hình biến môi trường của máy chủ (.env)</p>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="config-db-status">TRẠNG THÁI KẾT NỐI</label>
-                      <input type="text" id="config-db-status" readOnly value={dbStatus.status === 'connected' ? 'Hoạt động bình thường (Connected)' : dbStatus.status === 'disconnected' ? 'Mất Kết Nối CSDL' : 'Đang kết nối...'} />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="config-db-type">KIỂU CƠ SỞ DỮ LIỆU</label>
-                      <input type="text" id="config-db-type" readOnly value={dbStatus.database.includes('SQLite') ? 'SQLite Database File' : 'PostgreSQL Database Server'} />
-                    </div>
-                  </div>
-                  <div className="form-actions-horizontal">
-                    <button type="button" onClick={() => fetchDbStatus()} className="btn-primary">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" /></svg>
-                      Tự Động Kiểm Tra & Kết Nối Lại
-                    </button>
-                  </div>
-                </form>
+            <div className="config-container">
+              <div className="config-sub-nav">
+                <button 
+                  className={`sub-nav-item ${configSubTab === 'nhan-su' ? 'active' : ''}`} 
+                  onClick={() => setConfigSubTab('nhan-su')}
+                >
+                  Nhân sự
+                </button>
+                <button 
+                  className={`sub-nav-item ${configSubTab === 'nha-cung-cap' ? 'active' : ''}`} 
+                  onClick={() => setConfigSubTab('nha-cung-cap')}
+                >
+                  Nhà cung cấp
+                </button>
+                <button 
+                  className={`sub-nav-item ${configSubTab === 'trang-thai-khuon' ? 'active' : ''}`} 
+                  onClick={() => setConfigSubTab('trang-thai-khuon')}
+                >
+                  Trạng thái khuôn
+                </button>
               </div>
 
-              {/* Guide */}
-              <div className="config-guide-pane">
-                <h3>Hướng Dẫn Liên Kết</h3>
-                <p className="guide-intro">Hệ thống quản lý khuôn mẫu phiên bản v1.1 sử dụng kiến trúc Client-Server (React + TS):</p>
-                <ol className="guide-list">
-                  <li>
-                    <strong>Lưu trữ tập trung (VPS):</strong> Toàn bộ dữ liệu của các khuôn được đồng bộ thời gian thực thông qua cơ sở dữ liệu PostgreSQL. Hỗ trợ nhiều người dùng truy cập từ các thiết bị khác nhau tại nhà xưởng.
-                  </li>
-                  <li>
-                    <strong>Lưu trữ hình ảnh trực tiếp:</strong> Ảnh lỗi đính kèm được tải trực tiếp lên VPS của công ty thông qua API, không qua trung gian giúp đảm bảo tính bảo mật và tốc độ phản hồi tối ưu.
-                  </li>
-                </ol>
-                <div className="guide-notes-box">
-                  <strong>CÁCH KẾT NỐI TRÊN VPS PRODUCTION:</strong>
-                  <p>1. Cài đặt PostgreSQL trên VPS Ubuntu/Debian.</p>
-                  <p>2. Chỉnh sửa biến <code>DATABASE_URL</code> trong file <code>.env</code> tại thư mục chạy backend.</p>
-                  <p>3. Khởi động lại dịch vụ backend Python (Uvicorn), hệ thống sẽ tự động cấu hình lại bảng dữ liệu.</p>
-                </div>
+              <div className="config-sub-content">
+                {configSubTab === 'nhan-su' && (
+                  <div className="sub-tab-panel">
+                    <h3>Quản lý Nhân sự & Phân vai</h3>
+                    <p className="sub-tab-desc">Danh sách nhân sự vận hành hệ thống chạy thử và sửa chữa khuôn mẫu.</p>
+                    <table className="config-table">
+                      <thead>
+                        <tr>
+                          <th>Họ và Tên</th>
+                          <th>Vai trò hệ thống</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dbStaff.length === 0 ? (
+                          <tr>
+                            <td colSpan={2} className="form-empty-state">Đang tải danh sách nhân sự...</td>
+                          </tr>
+                        ) : (
+                          dbStaff.map(s => (
+                            <tr key={s.id}>
+                              <td><strong>{s.name}</strong></td>
+                              <td>{s.role}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {configSubTab === 'nha-cung-cap' && (
+                  <div className="sub-tab-panel">
+                    <h3>Quản lý Nhà cung cấp (Đối tác chế tạo)</h3>
+                    <p className="sub-tab-desc">Các đơn vị cơ khí chính xác chịu trách nhiệm gia công và bảo hành khuôn mẫu.</p>
+                    <table className="config-table">
+                      <thead>
+                        <tr>
+                          <th>Mã nhà cung cấp</th>
+                          <th>Tên đơn vị chế tạo</th>
+                          <th>Người liên hệ chính</th>
+                          <th>Tình trạng hợp tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><strong>NCC-MINHDUC</strong></td>
+                          <td>Cơ khí khuôn mẫu Minh Đức</td>
+                          <td>A. Minh Đức</td>
+                          <td><span className="status-pill trial">Đang hoạt động</span></td>
+                        </tr>
+                        <tr>
+                          <td><strong>NCC-ANPHAT</strong></td>
+                          <td>Cơ khí chính xác An Phát</td>
+                          <td>A. An Phát</td>
+                          <td><span className="status-pill trial">Đang hoạt động</span></td>
+                        </tr>
+                        <tr>
+                          <td><strong>NCC-VINA-MOLD</strong></td>
+                          <td>Công ty TNHH Vina Mold</td>
+                          <td>C. Thanh Thảo</td>
+                          <td><span className="status-pill trial">Đang hoạt động</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {configSubTab === 'trang-thai-khuon' && (
+                  <div className="sub-tab-panel">
+                    <h3>Quy trình & Vòng đời Trạng thái khuôn</h3>
+                    <p className="sub-tab-desc">6 trạng thái chính thống nhất trong quy trình chạy thử khuôn và gửi mẫu.</p>
+                    <table className="config-table">
+                      <thead>
+                        <tr>
+                          <th>Tên trạng thái</th>
+                          <th>Mô tả ý nghĩa quy trình</th>
+                          <th>Màu sắc Pill</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dbStatuses.length === 0 ? (
+                          <tr>
+                            <td colSpan={2} className="form-empty-state">Đang tải danh sách trạng thái...</td>
+                          </tr>
+                        ) : (
+                          dbStatuses.map(st => (
+                            <tr key={st.id}>
+                              <td><span className={`status-pill ${st.color}`}>{st.name}</span></td>
+                              <td>{st.description || 'Không có mô tả'}</td>
+                              <td>{st.color}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -1314,6 +1435,105 @@ export default function App() {
               &times;
             </button>
             <img src={lightboxImgUrl} alt="Phóng to ảnh mẫu" />
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================================================
+         DASHBOARD STATISTICS MODAL (Hover/Click trigger)
+         ========================================================================== */}
+      {isDashboardOpen && (
+        <div 
+          className="dashboard-modal-backdrop" 
+          onClick={() => setIsDashboardOpen(false)}
+        >
+          <div 
+            className="dashboard-modal-container" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dashboard-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '20px', height: '20px', color: 'var(--primary-color)' }}><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg>
+                <h2>DASHBOARD THỐNG KÊ CHI TIẾT</h2>
+              </div>
+              <button 
+                className="dashboard-modal-close" 
+                onClick={() => setIsDashboardOpen(false)}
+                title="Đóng dashboard"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="dashboard-modal-body">
+              {/* Stats Cards */}
+              <div className="stats-cards-grid">
+                <div className="stats-card">
+                  <div className="card-content">
+                    <span className="card-title">Tổng Số Khuôn</span>
+                    <span className="card-value">{stats.total}</span>
+                  </div>
+                  <div className="card-icon-box purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
+                  </div>
+                </div>
+                <div className="stats-card">
+                  <div className="card-content">
+                    <span className="card-title">Đang Thử Khuôn</span>
+                    <span className="card-value">{stats.testing}</span>
+                  </div>
+                  <div className="card-icon-box blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                  </div>
+                </div>
+                <div className="stats-card">
+                  <div className="card-content">
+                    <span className="card-title">Đang Lỗi / Sửa Chữa</span>
+                    <span className="card-value">{stats.error}</span>
+                  </div>
+                  <div className="card-icon-box red">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                  </div>
+                </div>
+                <div className="stats-card">
+                  <div className="card-content">
+                    <span className="card-title">Đã Nghiệm Thu (Khách duyệt)</span>
+                    <span className="card-value">{stats.accepted}</span>
+                  </div>
+                  <div className="card-icon-box green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="card-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Charts */}
+              <div className="charts-container">
+                <div className="chart-box">
+                  <div className="chart-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="chart-header-icon"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                    <div>
+                      <h3>Phân Loại Trạng Thái Khuôn</h3>
+                      <p>Biểu đồ thể hiện tình trạng hoạt động thực tế của toàn bộ khuôn</p>
+                    </div>
+                  </div>
+                  <div className="chart-body donut-chart-container">
+                    <canvas ref={statusChartRef} id="chart-status"></canvas>
+                  </div>
+                </div>
+                <div className="chart-box">
+                  <div className="chart-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="chart-header-icon"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+                    <div>
+                      <h3>Phân Bổ Theo Nhà Cung Cấp</h3>
+                      <p>Số lượng khuôn chế tạo và bàn giao bởi mỗi đối tác cơ khí</p>
+                    </div>
+                  </div>
+                  <div className="chart-body">
+                    <canvas ref={supplierChartRef} id="chart-supplier"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

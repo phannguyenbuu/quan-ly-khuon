@@ -13,16 +13,16 @@ if PARENT_DIR not in sys.path:
 from backend import database, models
 
 def seed():
-    print("Bắt đầu khởi tạo dữ liệu mẫu nâng cao (Bao gồm Ảnh gallery & Tài liệu)...")
+    print("Bắt đầu khởi tạo dữ liệu mẫu nâng cao (Theo mô hình MoldEvent)...")
     models.Base.metadata.create_all(bind=database.engine)
     db = database.SessionLocal()
     
     try:
-        # 1. Dọn dẹp dữ liệu cũ để tránh trùng lặp
-        db.query(models.MoldFile).delete()
-        db.query(models.ErrorLog).delete()
-        db.query(models.TransactionLog).delete()
+        # 1. Dọn dẹp dữ liệu cũ
+        db.query(models.MoldEvent).delete()
         db.query(models.Mold).delete()
+        db.query(models.Staff).delete()
+        db.query(models.Status).delete()
         db.commit()
         print("Đã làm sạch dữ liệu cũ.")
 
@@ -42,10 +42,9 @@ def seed():
         print(f"Tìm thấy {len(texture_images)} hình ảnh mẫu trong thư mục textures.")
 
         # Hàm lấy danh sách hình ảnh mẫu ngẫu nhiên cho mỗi khuôn
-        def get_sample_images(code, count=6):
+        def get_sample_images(code, count=4):
             copied_files = []
             if len(texture_images) >= count:
-                # Lấy ngẫu nhiên hoặc tuần tự các ảnh
                 selected = random.sample(texture_images, count)
                 for idx, src in enumerate(selected):
                     ext = os.path.splitext(src)[1]
@@ -53,20 +52,38 @@ def seed():
                     dest = os.path.join(upload_dir, filename)
                     try:
                         shutil.copy2(src, dest)
-                        copied_files.append((f"/uploads/{filename}", filename))
+                        copied_files.append(f"/uploads/{filename}")
                     except Exception as e:
                         print(f"Lỗi khi copy ảnh {src}: {e}")
             else:
-                # Fallback: sao chép ảnh tracuu.jpg nếu thư mục trống
                 tracuu_path = os.path.join(PARENT_DIR, "ref", "tracuu.jpg")
                 if os.path.exists(tracuu_path):
                     for idx in range(count):
                         filename = f"{code}_gallery_fallback_{idx + 1}.jpg"
                         shutil.copy2(tracuu_path, os.path.join(upload_dir, filename))
-                        copied_files.append((f"/uploads/{filename}", filename))
+                        copied_files.append(f"/uploads/{filename}")
             return copied_files
 
-        # 2. Định nghĩa các khuôn mẫu và nạp dữ liệu
+        # 2. Tạo nhân sự & trạng thái cấu hình
+        staff_list = [
+            models.Staff(name="Kỹ thuật viên Sửa Chữa", role="Thợ khuôn"),
+            models.Staff(name="Kỹ sư Đảm bảo Chất lượng (QC)", role="QC"),
+            models.Staff(name="Quản lý Xưởng sản xuất", role="Quản lý")
+        ]
+        db.add_all(staff_list)
+        
+        status_list = [
+            models.Status(name="Khuôn nhập kho", description="Khai báo khuôn mới về xưởng sản xuất", color="import"),
+            models.Status(name="Thử khuôn", description="Lắp khuôn lên máy chạy thử sản phẩm mẫu", color="trial"),
+            models.Status(name="Gửi mẫu khách", description="Dập mẫu đạt và gửi mẫu đi cho khách duyệt", color="sample"),
+            models.Status(name="Nhà máy tự sửa", description="Phát hiện lỗi chạy thử, thợ xưởng tự khắc phục", color="selfrepair"),
+            models.Status(name="NCC đã lấy khuôn", description="Bàn giao lại cho NCC đem về bảo hành/sửa đổi", color="supplier"),
+            models.Status(name="Khách duyệt (Sản xuất)", description="Khách ký duyệt chất lượng mẫu, đưa vào chạy hàng loạt", color="accepted")
+        ]
+        db.add_all(status_list)
+        db.flush()
+
+        # 3. Định nghĩa các khuôn mẫu và nạp dữ liệu sự kiện liên quan
 
         # --- MK-NAP-24 ---
         mold_nap = models.Mold(
@@ -78,16 +95,17 @@ def seed():
         )
         db.add(mold_nap)
         db.flush()
-        db.add(models.TransactionLog(
+        
+        # Sự kiện nhập kho
+        db.add(models.MoldEvent(
             mold_code="MK-NAP-24",
-            status="Khuôn nhập kho",
-            notes="Nhập kho thành công khuôn nắp chai nhựa 24mm từ NCC Minh Đức",
-            technician="Hệ thống",
-            created_at=datetime(2026, 6, 10, 8, 30)
+            type="transaction",
+            name="Khuôn nhập kho",
+            content="Nhập kho thành công khuôn <strong>nắp chai nhựa 24mm</strong> từ NCC <em>Minh Đức</em>",
+            tagged_staff="Hệ thống",
+            created_at=datetime(2026, 6, 10, 8, 30),
+            images=",".join(get_sample_images("MK-NAP-24", count=3))
         ))
-        # Thêm 5-8 ảnh gallery mẫu
-        for url, name in get_sample_images("MK-NAP-24", count=7):
-            db.add(models.MoldFile(mold_code="MK-NAP-24", file_url=url, file_name=name, is_attachment=False))
 
         # --- MK-THU-08 ---
         mold_thu = models.Mold(
@@ -99,23 +117,25 @@ def seed():
         )
         db.add(mold_thu)
         db.flush()
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-THU-08",
-            status="Khuôn nhập kho",
-            notes="Nhập kho thành công khuôn thân hộp mỹ phẩm từ NCC HighTech",
-            technician="Hệ thống",
+            type="transaction",
+            name="Khuôn nhập kho",
+            content="Nhập kho thành công khuôn <strong>thân hộp mỹ phẩm 50g</strong> từ NCC <em>HighTech</em>",
+            tagged_staff="Hệ thống",
             created_at=datetime(2026, 6, 12, 9, 0)
         ))
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-THU-08",
-            status="Thử khuôn",
-            notes="Lắp ráp lên máy số 3 dập thử mẫu lần 1",
-            technician="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
-            created_at=datetime(2026, 6, 13, 14, 15)
+            type="transaction",
+            name="Thử khuôn",
+            content="Lắp ráp lên máy số 3 dập thử mẫu lần 1",
+            tagged_staff="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
+            created_at=datetime(2026, 6, 13, 14, 15),
+            images=",".join(get_sample_images("MK-THU-08", count=2))
         ))
-        # Thêm ảnh mẫu
-        for url, name in get_sample_images("MK-THU-08", count=6):
-            db.add(models.MoldFile(mold_code="MK-THU-08", file_url=url, file_name=name, is_attachment=False))
 
         # --- MK-QUAI-12 ---
         mold_quai = models.Mold(
@@ -127,44 +147,39 @@ def seed():
         )
         db.add(mold_quai)
         db.flush()
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-QUAI-12",
-            status="Khuôn nhập kho",
-            notes="Nhập kho thành công khuôn quai thùng sơn 18l từ NCC Á Đông",
-            technician="Hệ thống",
+            type="transaction",
+            name="Khuôn nhập kho",
+            content="Nhập kho thành công khuôn <strong>quai thùng sơn 18L</strong> từ NCC <em>Á Đông</em>",
+            tagged_staff="Hệ thống",
             created_at=datetime(2026, 6, 5, 10, 0)
         ))
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-QUAI-12",
-            status="Thử khuôn Không đạt",
-            notes="Thử khuôn hỏng: Sản phẩm bị ba bớ nặng dính ở cuống phun, áp lực phun không cân bằng.",
-            technician="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
+            type="transaction",
+            name="Thử khuôn",
+            content="Thử khuôn hỏng: Sản phẩm bị ba bớ nặng dính ở cuống phun, áp lực phun không cân bằng.",
+            tagged_staff="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
             created_at=datetime(2026, 6, 17, 17, 0)
         ))
-        db.add(models.TransactionLog(
-            mold_code="MK-QUAI-12",
-            status="Nhà máy tự sửa",
-            notes="Báo lỗi chạy thử hỏng: Ba bớ dính ở cuống phun, áp lực phun không đều ở các cavity biên",
-            technician="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
-            created_at=datetime(2026, 6, 18, 9, 30)
-        ))
-        # Ảnh lỗi chính
+        
         tracuu_path = os.path.join(PARENT_DIR, "ref", "tracuu.jpg")
         err_image_name = "error_quai_12.jpg"
         if os.path.exists(tracuu_path):
             shutil.copy2(tracuu_path, os.path.join(upload_dir, err_image_name))
-        
-        db.add(models.ErrorLog(
+            
+        db.add(models.MoldEvent(
             mold_code="MK-QUAI-12",
-            description="Ba bớ dính ở cuống phun, áp lực phun không đều ở các cavity biên",
-            cause="Kích thước cổng phun (gate) nhỏ hơn thiết kế 0.15mm",
-            solution="Nhà máy tự sửa",
-            image_url=f"/uploads/{err_image_name}",
+            type="issue",
+            name="Báo lỗi: Nhà máy tự sửa",
+            content="<strong>Mô tả sự cố:</strong> Ba bớ dính ở cuống phun, áp lực phun không đều ở các cavity biên<br/><strong>Nguyên nhân:</strong> Kích thước cổng phun (gate) nhỏ hơn thiết kế 0.15mm<br/><strong>Giải pháp:</strong> Nhà máy tự sửa",
+            tagged_staff="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
+            images=f"/uploads/{err_image_name}",
             created_at=datetime(2026, 6, 18, 9, 30)
         ))
-        # Thêm ảnh mẫu
-        for url, name in get_sample_images("MK-QUAI-12", count=8):
-            db.add(models.MoldFile(mold_code="MK-QUAI-12", file_url=url, file_name=name, is_attachment=False))
 
         # --- MK-CHAI-PET ---
         mold_chai = models.Mold(
@@ -176,38 +191,24 @@ def seed():
         )
         db.add(mold_chai)
         db.flush()
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-CHAI-PET",
-            status="Khuôn nhập kho",
-            notes="Nhập kho thành công khuôn chai PET từ NCC Minh Tâm",
-            technician="Hệ thống",
+            type="transaction",
+            name="Khuôn nhập kho",
+            content="Nhập kho thành công khuôn <strong>chai PET 500ml</strong> từ NCC <em>Minh Tâm</em>",
+            tagged_staff="Hệ thống",
             created_at=datetime(2026, 6, 1, 11, 0)
         ))
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-CHAI-PET",
-            status="Thử khuôn Không đạt",
-            notes="Thử khuôn hỏng: Rò rỉ nước làm mát hệ thống slide lõi",
-            technician="Trần Văn Hùng (Kỹ thuật vận hành)",
-            created_at=datetime(2026, 6, 12, 16, 0)
-        ))
-        db.add(models.TransactionLog(
-            mold_code="MK-CHAI-PET",
-            status="NCC đã lấy khuôn",
-            notes="Bàn giao lại khuôn cho NCC mang về bảo hành sửa slide nước",
-            technician="Lê Minh Hoàng (Quản đốc xưởng)",
+            type="issue",
+            name="Báo lỗi: NCC đã lấy khuôn",
+            content="<strong>Mô tả sự cố:</strong> Rò rỉ nước làm mát hệ thống slide lõi gây bọt khí sản phẩm<br/><strong>Nguyên nhân:</strong> Hỏng gioăng cao su chịu nhiệt ở slide bên trái<br/><strong>Giải pháp:</strong> NCC đã lấy khuôn về bảo hành sửa đổi",
+            tagged_staff="Trần Văn Hùng (Kỹ thuật vận hành)",
             created_at=datetime(2026, 6, 14, 10, 30)
         ))
-        db.add(models.ErrorLog(
-            mold_code="MK-CHAI-PET",
-            description="Rò rỉ nước làm mát hệ thống slide lõi gây bọt khí sản phẩm",
-            cause="Hỏng gioăng cao su chịu nhiệt ở slide bên trái",
-            solution="NCC đã lấy khuôn về bảo hành sửa đổi",
-            image_url=None,
-            created_at=datetime(2026, 6, 14, 10, 30)
-        ))
-        # Thêm ảnh mẫu
-        for url, name in get_sample_images("MK-CHAI-PET", count=5):
-            db.add(models.MoldFile(mold_code="MK-CHAI-PET", file_url=url, file_name=name, is_attachment=False))
 
         # --- MK-DE-GIAC ---
         mold_de = models.Mold(
@@ -219,30 +220,31 @@ def seed():
         )
         db.add(mold_de)
         db.flush()
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-DE-GIAC",
-            status="Khuôn nhập kho",
-            notes="Nhập kho thành công khuôn đế giác cắm điện từ NCC Việt Nhật",
-            technician="Hệ thống",
+            type="transaction",
+            name="Khuôn nhập kho",
+            content="Nhập kho thành công khuôn <strong>đế giác cắm điện thông minh</strong> từ NCC <em>Việt Nhật</em>",
+            tagged_staff="Hệ thống",
             created_at=datetime(2026, 6, 15, 8, 0)
         ))
-        db.add(models.TransactionLog(
+        db.add(models.MoldEvent(
             mold_code="MK-DE-GIAC",
-            status="Thử khuôn",
-            notes="Dập thử nghiệm đạt kích thước hình học chuẩn",
-            technician="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
+            type="transaction",
+            name="Thử khuôn",
+            content="Dập thử nghiệm đạt kích thước hình học chuẩn",
+            tagged_staff="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
             created_at=datetime(2026, 6, 15, 15, 0)
         ))
-        db.add(models.TransactionLog(
+        db.add(models.MoldEvent(
             mold_code="MK-DE-GIAC",
-            status="Gửi mẫu khách",
-            notes="Gửi mẫu thử lần 1 cho phòng R&D của khách hàng duyệt",
-            technician="Lê Minh Hoàng (Quản đốc xưởng)",
+            type="transaction",
+            name="Gửi mẫu khách",
+            content="Gửi mẫu thử lần 1 cho phòng R&D của khách hàng duyệt",
+            tagged_staff="Lê Minh Hoàng (Quản đốc xưởng)",
             created_at=datetime(2026, 6, 16, 11, 0)
         ))
-        # Thêm ảnh mẫu
-        for url, name in get_sample_images("MK-DE-GIAC", count=9):
-            db.add(models.MoldFile(mold_code="MK-DE-GIAC", file_url=url, file_name=name, is_attachment=False))
 
         # --- MK-HOP-NUT ---
         mold_hop = models.Mold(
@@ -256,59 +258,52 @@ def seed():
         )
         db.add(mold_hop)
         db.flush()
-        db.add(models.TransactionLog(
+        
+        db.add(models.MoldEvent(
             mold_code="MK-HOP-NUT",
-            status="Khuôn nhập kho",
-            notes="Nhập kho thành công khuôn nắp hộp 1.2l từ NCC Minh Đức",
-            technician="Hệ thống",
+            type="transaction",
+            name="Khuôn nhập kho",
+            content="Nhập kho thành công khuôn <strong>nắp hộp thực phẩm 1.2L</strong> từ NCC <em>Minh Đức</em>",
+            tagged_staff="Hệ thống",
             created_at=datetime(2026, 5, 20, 14, 0)
         ))
-        db.add(models.TransactionLog(
+        db.add(models.MoldEvent(
             mold_code="MK-HOP-NUT",
-            status="Thử khuôn",
-            notes="Thử khuôn thành công: sản phẩm đạt tính thẩm mỹ",
-            technician="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
+            type="transaction",
+            name="Thử khuôn",
+            content="Thử khuôn thành công: sản phẩm đạt tính thẩm mỹ",
+            tagged_staff="Nguyễn Hoàng Nam (Kỹ thuật sản xuất)",
             created_at=datetime(2026, 5, 24, 10, 0)
         ))
-        db.add(models.TransactionLog(
+        db.add(models.MoldEvent(
             mold_code="MK-HOP-NUT",
-            status="Gửi mẫu khách",
-            notes="Gửi mẫu thử đạt cho khách hàng đánh giá lắp ghép thực phẩm",
-            technician="Lê Minh Hoàng (Quản đốc xưởng)",
+            type="transaction",
+            name="Gửi mẫu khách",
+            content="Gửi mẫu thử đạt cho khách hàng đánh giá lắp ghép thực phẩm",
+            tagged_staff="Lê Minh Hoàng (Quản đốc xưởng)",
             created_at=datetime(2026, 5, 25, 9, 0)
         ))
-        db.add(models.TransactionLog(
+        
+        import json
+        doc_name = "Bao_cao_nghiem_thu_lap_ghep.pdf"
+        doc_path = os.path.join(upload_dir, doc_name)
+        with open(doc_path, "w", encoding="utf-8") as f:
+            f.write("Đây là tệp nghiệm thu mẫu.")
+            
+        db.add(models.MoldEvent(
             mold_code="MK-HOP-NUT",
-            status="Khách duyệt (Sản xuất)",
-            notes="Khách duyệt nghiệm thu: Sản phẩm đạt yêu cầu về độ bóng bề mặt và độ khít nắp hộp. Chấp thuận chạy sản xuất đại trà.",
-            technician="Đại diện khách hàng",
+            type="acceptance",
+            name="Khách duyệt (Sản xuất)",
+            content="Khách duyệt nghiệm thu: <span class='text-success'>Sản phẩm đạt yêu cầu về độ bóng bề mặt và độ khít nắp hộp. Chấp thuận chạy sản xuất đại trà.</span>",
+            tagged_staff="Đại diện khách hàng",
+            attachments=json.dumps([{"name": doc_name, "url": f"/uploads/{doc_name}"}]),
             created_at=datetime(2026, 6, 10, 16, 30)
         ))
-        # Thêm ảnh mẫu
-        for url, name in get_sample_images("MK-HOP-NUT", count=8):
-            db.add(models.MoldFile(mold_code="MK-HOP-NUT", file_url=url, file_name=name, is_attachment=False))
 
-        # 3. Tạo một số file tài liệu đính kèm mẫu (Dành cho chức năng up file đính kèm kèm theo)
-        print("Tạo tài liệu đính kèm mẫu...")
-        doc_names = ["Bao_cao_nghiem_thu_lap_ghep.pdf", "Ban_ve_ky_thuat_nap_chai.zip", "Danh_gia_thong_so_gate.xlsx"]
-        for idx, doc_name in enumerate(doc_names):
-            doc_path = os.path.join(upload_dir, doc_name)
-            with open(doc_path, "w", encoding="utf-8") as f:
-                f.write(f"Đây là tệp tin tài liệu mẫu {doc_name} của hệ thống quản lý khuôn. Ngày tạo: 2026-07-11.")
-            
-            # Gán tài liệu đính kèm cho một số khuôn ngẫu nhiên
-            mold_target = ["MK-HOP-NUT", "MK-NAP-24", "MK-QUAI-12"][idx]
-            db.add(models.MoldFile(
-                mold_code=mold_target,
-                file_url=f"/uploads/{doc_name}",
-                file_name=doc_name,
-                is_attachment=True
-            ))
-
-        # Commit toàn bộ dữ liệu mẫu nâng cao
+        # Commit toàn bộ
         db.commit()
-        print("Đã hoàn tất nạp dữ liệu mẫu và ảnh gallery nâng cao thành công!")
-
+        print("Đã hoàn tất nạp dữ liệu mẫu mới thành công!")
+ 
     except Exception as e:
         db.rollback()
         print("Có lỗi xảy ra khi nạp dữ liệu mẫu:", str(e))

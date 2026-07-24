@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
 /* CSS Hệ thống Quản lý Khuôn v1.1 - Định dạng giao diện tuân thủ /ref */
 
 :root {
@@ -48,6 +50,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
+    font-weight: 300; /* Mảnh toàn bộ */
 }
 
 body {
@@ -101,7 +104,7 @@ body {
 
 .title-area h1 {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 300;
     letter-spacing: -0.02em;
     display: flex;
     align-items: center;
@@ -113,7 +116,7 @@ body {
     background-color: #e0e7ff;
     color: var(--primary-color);
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 400;
     padding: 2px 8px;
     border-radius: 20px;
 }
@@ -137,7 +140,7 @@ body {
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 300;
     background-color: #f1f5f9;
     border: 1px solid var(--border-color);
 }
@@ -184,7 +187,7 @@ body {
 
 .date-badge {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 300;
     color: var(--text-secondary);
     background-color: #f1f5f9;
     padding: 8px 16px;
@@ -209,7 +212,7 @@ body {
     outline: none;
     padding: 12px 16px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
@@ -289,13 +292,13 @@ body {
 
 .card-title {
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 300;
     color: var(--text-secondary);
 }
 
 .card-value {
     font-size: 28px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-primary);
 }
 
@@ -350,7 +353,7 @@ body {
 
 .chart-header h3 {
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-primary);
 }
 
@@ -387,7 +390,7 @@ body {
     outline: none;
     padding: 12px 24px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-secondary);
     cursor: pointer;
     display: flex;
@@ -428,7 +431,7 @@ body {
 
 .form-panel h2 {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-primary);
     margin-bottom: 6px;
 }
@@ -456,7 +459,7 @@ body {
 
 .form-group label {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-secondary);
     letter-spacing: 0.05em;
 }
@@ -529,7 +532,7 @@ body {
     background-color: var(--primary-color);
     color: white;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
     border: none;
     outline: none;
     padding: 12px 24px;
@@ -642,7 +645,7 @@ body {
     background-color: #f1f5f9;
     color: var(--text-secondary);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 300;
     border: 1px solid var(--border-color);
     outline: none;
     padding: 10px 16px;
@@ -674,7 +677,7 @@ body {
 .molds-table th {
     padding: 12px 16px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-secondary);
     border-bottom: 2px solid var(--border-color);
     letter-spacing: 0.05em;
@@ -726,7 +729,7 @@ body {
 /* Badge Trạng thái */
 .status-pill {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 400;
     padding: 4px 10px;
     border-radius: 12px;
     display: inline-block;
@@ -790,13 +793,13 @@ body {
 
 .detail-title-block h2 {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-primary);
 }
 
 .detail-title-block h3 {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 300;
     color: var(--text-secondary);
     margin-top: 4px;
 }
@@ -815,7 +818,7 @@ body {
     padding: 6px 12px;
     border-radius: var(--radius-sm);
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
     transition: var(--transition-fast);
 }
@@ -842,13 +845,13 @@ body {
 
 .info-label {
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 300;
     color: var(--text-secondary);
 }
 
 .status-badge-styled {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 400;
     padding: 4px 12px;
     border-radius: 20px;
     display: inline-block;
@@ -875,7 +878,7 @@ body {
 
 .info-val {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-primary);
     margin-left: 8px;
 }
@@ -899,7 +902,7 @@ body {
 
 .section-title {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 300;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -930,7 +933,7 @@ body {
 }
 
 .img-label {
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-primary) !important;
     display: flex;
     align-items: center;
@@ -971,7 +974,7 @@ body {
 
 .detail-section h4 {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-secondary);
     margin-bottom: 16px;
 }
@@ -1031,7 +1034,7 @@ body {
 
 .timeline-status {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-primary);
 }
 
@@ -1085,7 +1088,7 @@ body {
 
 .banner-text h2 {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 300;
 }
 
 .banner-text p {
@@ -1110,7 +1113,7 @@ body {
 
 .config-form-pane h3, .config-guide-pane h3 {
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-primary);
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border-color);
@@ -1194,9 +1197,36 @@ body {
     .lookup-grid-layout, .config-grid-layout {
         grid-template-columns: 1fr;
     }
-    .lookup-right-pane {
-        position: relative;
+    .lookup-right-pane.mobile-modal-hidden {
+        display: none;
+    }
+    
+    .lookup-right-pane.mobile-modal-active {
+        position: fixed;
         top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .lookup-right-pane.mobile-modal-active .detail-panel-card {
+        width: 100%;
+        max-width: 600px;
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        margin: 0;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        animation: modalPopup 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 }
 
@@ -1272,7 +1302,7 @@ body {
 
 .modal-header h2 {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-primary);
 }
 
@@ -1320,7 +1350,7 @@ body {
     outline: none;
     padding: 10px 16px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-secondary);
     cursor: pointer;
     position: relative;
@@ -1465,7 +1495,7 @@ body {
     flex-shrink: 0;
     transition: var(--transition-fast);
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 300;
     gap: 4px;
     box-shadow: var(--shadow-sm);
 }
@@ -1529,7 +1559,7 @@ body {
 
 .attachments-list-container h4 {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 300;
     color: var(--text-secondary);
     margin-bottom: 12px;
 }
@@ -1557,7 +1587,7 @@ body {
     color: var(--primary-color);
     text-decoration: none;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 400;
 }
 
 .attach-link:hover {
@@ -1639,7 +1669,1672 @@ body {
     border: none;
     color: #ef4444;
     cursor: pointer;
-    font-weight: 700;
+    font-weight: 300;
 }
 
 
+
+/* ==========================================================================
+   DASHBOARD STATS POPUP MODAL STYLES
+   ========================================================================== */
+
+.logo-box-btn {
+    border: none;
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.logo-box-btn:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.dashboard-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: 90px;
+    padding-left: 24px;
+    animation: dashboardFadeIn 0.2s ease-out;
+}
+
+.dashboard-modal-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 850px;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: dashboardSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dashboard-modal-header h2 {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.dashboard-modal-close {
+    background: none;
+    border: none;
+    font-size: 26px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.dashboard-modal-close:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.dashboard-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@keyframes dashboardFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes dashboardSlideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Mobile specific styling for dashboard modal */
+@media (max-width: 768px) {
+    .dashboard-modal-backdrop {
+        align-items: center;
+        justify-content: center;
+        padding-top: 0;
+        padding-left: 0;
+    }
+    .dashboard-modal-container {
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        max-width: 100vw;
+        border-radius: 0;
+        border: none;
+    }
+}
+
+/* ==========================================================================
+   DETAIL CLOSE & DANGER ACTION BUTTONS
+   ========================================================================== */
+
+.detail-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.detail-close-btn:hover {
+    background-color: #f1f5f9;
+    color: #ef4444;
+}
+
+.btn-danger-action {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-danger-action:hover {
+    background-color: #dc2626;
+}
+
+
+/* ==========================================================================
+   CONFIGURATION SUB-NAV & CONFIG-TABLE STYLES
+   ========================================================================== */
+
+.config-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.config-sub-nav {
+    display: flex;
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 16px;
+    gap: 8px;
+}
+
+.sub-nav-item {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.sub-nav-item:hover {
+    background-color: #f1f5f9;
+    color: var(--text-primary);
+}
+
+.sub-nav-item.active {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    font-weight: 400;
+}
+
+.config-sub-content {
+    padding: 24px;
+}
+
+.sub-tab-panel h3 {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.sub-tab-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.config-table th {
+    font-weight: 400;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    padding: 12px 16px;
+}
+
+.config-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.config-table tr:last-child td {
+    border-bottom: none;
+}
+
+@keyframes modalPopup {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================================================
+   JIRA STATUS DROPDOWN & TRANSITION MODAL UX
+   ========================================================================== */
+
+.jira-status-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.jira-status-btn {
+    border: 1px solid var(--border-color);
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition-fast);
+    background-color: var(--bg-card);
+}
+
+.jira-status-btn:hover {
+    filter: brightness(0.95);
+}
+
+/* Status variants for Jira dropdown button */
+.jira-status-btn.trial { background-color: var(--status-trial-bg); color: var(--status-trial-text); border-color: var(--status-trial-text); }
+.jira-status-btn.selfrepair { background-color: var(--status-selfrepair-bg); color: var(--status-selfrepair-text); border-color: var(--status-selfrepair-text); }
+.jira-status-btn.supplier { background-color: var(--status-supplier-bg); color: var(--status-supplier-text); border-color: var(--status-supplier-text); }
+.jira-status-btn.sample { background-color: var(--status-sample-bg); color: var(--status-sample-text); border-color: var(--status-sample-text); }
+.jira-status-btn.accepted { background-color: var(--status-accepted-bg); color: var(--status-accepted-text); border-color: var(--status-accepted-text); }
+.jira-status-btn.import { background-color: #f1f5f9; color: #475569; border-color: #94a3b8; }
+
+.jira-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 1010;
+    width: 250px;
+    overflow: hidden;
+    animation: dashboardFadeIn 0.15s ease-out;
+}
+
+.jira-dropdown-menu .dropdown-title {
+    font-size: 10px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    padding: 8px 16px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.jira-dropdown-menu .dropdown-item {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.jira-dropdown-menu .dropdown-item:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+/* Jira Transition Modal Form styles */
+.jira-transition-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.jira-transition-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+}
+
+.jira-transition-header h2 {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.jira-transition-header .highlight-code {
+    font-weight: 300;
+    color: var(--primary-color);
+}
+
+.jira-transition-path {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.jira-status-node {
+    font-size: 12px;
+    font-weight: 400;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.jira-status-node.from {
+    background-color: #f1f5f9;
+    color: var(--text-secondary);
+}
+
+.jira-status-node.to {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-weight: 300;
+}
+
+.jira-path-arrow {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+.jira-transition-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.jira-card-style {
+    border: 1px solid var(--border-color);
+    background-color: #f8fafc;
+    border-radius: var(--radius-md);
+    padding: 16px;
+}
+
+/* Drag and Drop style */
+.jira-attachments-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.jira-attachments-section label {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+}
+
+.jira-upload-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.jira-dropzone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    text-align: center;
+    background-color: #f8fafc;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.jira-dropzone:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.jira-upload-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--text-secondary);
+}
+
+.jira-dropzone span {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.jira-dropzone b {
+    color: var(--primary-color);
+    font-weight: 300;
+}
+
+.jira-attachments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.jira-attach-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--bg-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.jira-attach-card:hover {
+    background-color: #f8fafc;
+}
+
+.jira-attach-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.jira-attach-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.jira-attach-info .name {
+    font-size: 12px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jira-attach-info .size {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.jira-attach-remove {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: var(--transition-fast);
+}
+
+.jira-attach-remove:hover {
+    color: #ef4444;
+}
+
+/* Jira Action Footer */
+.jira-transition-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
+.btn-jira-primary {
+    background-color: #0052cc; /* Jira Blue */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-jira-primary:hover {
+    background-color: #0065ff;
+}
+
+.btn-jira-cancel {
+    background: none;
+    border: none;
+    color: #42526e;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-jira-cancel:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   DASHBOARD STATS POPUP MODAL STYLES
+   ========================================================================== */
+
+.logo-box-btn {
+    border: none;
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.logo-box-btn:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.dashboard-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: 90px;
+    padding-left: 24px;
+    animation: dashboardFadeIn 0.2s ease-out;
+}
+
+.dashboard-modal-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 850px;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: dashboardSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dashboard-modal-header h2 {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.dashboard-modal-close {
+    background: none;
+    border: none;
+    font-size: 26px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.dashboard-modal-close:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.dashboard-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@keyframes dashboardFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes dashboardSlideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Mobile specific styling for dashboard modal */
+@media (max-width: 768px) {
+    .dashboard-modal-backdrop {
+        align-items: center;
+        justify-content: center;
+        padding-top: 0;
+        padding-left: 0;
+    }
+    .dashboard-modal-container {
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        max-width: 100vw;
+        border-radius: 0;
+        border: none;
+    }
+}
+
+/* ==========================================================================
+   DETAIL CLOSE & DANGER ACTION BUTTONS
+   ========================================================================== */
+
+.detail-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.detail-close-btn:hover {
+    background-color: #f1f5f9;
+    color: #ef4444;
+}
+
+.btn-danger-action {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-danger-action:hover {
+    background-color: #dc2626;
+}
+
+
+/* ==========================================================================
+   CONFIGURATION SUB-NAV & CONFIG-TABLE STYLES
+   ========================================================================== */
+
+.config-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.config-sub-nav {
+    display: flex;
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 16px;
+    gap: 8px;
+}
+
+.sub-nav-item {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.sub-nav-item:hover {
+    background-color: #f1f5f9;
+    color: var(--text-primary);
+}
+
+.sub-nav-item.active {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    font-weight: 400;
+}
+
+.config-sub-content {
+    padding: 24px;
+}
+
+.sub-tab-panel h3 {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.sub-tab-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.config-table th {
+    font-weight: 400;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    padding: 12px 16px;
+}
+
+.config-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.config-table tr:last-child td {
+    border-bottom: none;
+}
+
+@keyframes modalPopup {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================================================
+   JIRA STATUS DROPDOWN & TRANSITION MODAL UX
+   ========================================================================== */
+
+.jira-status-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.jira-status-btn {
+    border: 1px solid var(--border-color);
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition-fast);
+    background-color: var(--bg-card);
+}
+
+.jira-status-btn:hover {
+    filter: brightness(0.95);
+}
+
+/* Status variants for Jira dropdown button */
+.jira-status-btn.trial { background-color: var(--status-trial-bg); color: var(--status-trial-text); border-color: var(--status-trial-text); }
+.jira-status-btn.selfrepair { background-color: var(--status-selfrepair-bg); color: var(--status-selfrepair-text); border-color: var(--status-selfrepair-text); }
+.jira-status-btn.supplier { background-color: var(--status-supplier-bg); color: var(--status-supplier-text); border-color: var(--status-supplier-text); }
+.jira-status-btn.sample { background-color: var(--status-sample-bg); color: var(--status-sample-text); border-color: var(--status-sample-text); }
+.jira-status-btn.accepted { background-color: var(--status-accepted-bg); color: var(--status-accepted-text); border-color: var(--status-accepted-text); }
+.jira-status-btn.import { background-color: #f1f5f9; color: #475569; border-color: #94a3b8; }
+
+.jira-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 1010;
+    width: 250px;
+    overflow: hidden;
+    animation: dashboardFadeIn 0.15s ease-out;
+}
+
+.jira-dropdown-menu .dropdown-title {
+    font-size: 10px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    padding: 8px 16px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.jira-dropdown-menu .dropdown-item {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.jira-dropdown-menu .dropdown-item:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+/* Jira Transition Modal Form styles */
+.jira-transition-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.jira-transition-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+}
+
+.jira-transition-header h2 {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.jira-transition-header .highlight-code {
+    font-weight: 300;
+    color: var(--primary-color);
+}
+
+.jira-transition-path {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.jira-status-node {
+    font-size: 12px;
+    font-weight: 400;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.jira-status-node.from {
+    background-color: #f1f5f9;
+    color: var(--text-secondary);
+}
+
+.jira-status-node.to {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-weight: 300;
+}
+
+.jira-path-arrow {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+.jira-transition-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.jira-card-style {
+    border: 1px solid var(--border-color);
+    background-color: #f8fafc;
+    border-radius: var(--radius-md);
+    padding: 16px;
+}
+
+/* Drag and Drop style */
+.jira-attachments-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.jira-attachments-section label {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+}
+
+.jira-upload-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.jira-dropzone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    text-align: center;
+    background-color: #f8fafc;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.jira-dropzone:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.jira-upload-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--text-secondary);
+}
+
+.jira-dropzone span {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.jira-dropzone b {
+    color: var(--primary-color);
+    font-weight: 300;
+}
+
+.jira-attachments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.jira-attach-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--bg-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.jira-attach-card:hover {
+    background-color: #f8fafc;
+}
+
+.jira-attach-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.jira-attach-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.jira-attach-info .name {
+    font-size: 12px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jira-attach-info .size {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.jira-attach-remove {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: var(--transition-fast);
+}
+
+.jira-attach-remove:hover {
+    color: #ef4444;
+}
+
+/* Jira Action Footer */
+.jira-transition-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
+.btn-jira-primary {
+    background-color: #0052cc; /* Jira Blue */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-jira-primary:hover {
+    background-color: #0065ff;
+}
+
+.btn-jira-cancel {
+    background: none;
+    border: none;
+    color: #42526e;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-jira-cancel:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   DASHBOARD STATS POPUP MODAL STYLES
+   ========================================================================== */
+
+.logo-box-btn {
+    border: none;
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.logo-box-btn:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.dashboard-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: 90px;
+    padding-left: 24px;
+    animation: dashboardFadeIn 0.2s ease-out;
+}
+
+.dashboard-modal-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 850px;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: dashboardSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dashboard-modal-header h2 {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.dashboard-modal-close {
+    background: none;
+    border: none;
+    font-size: 26px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.dashboard-modal-close:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.dashboard-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@keyframes dashboardFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes dashboardSlideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Mobile specific styling for dashboard modal */
+@media (max-width: 768px) {
+    .dashboard-modal-backdrop {
+        align-items: center;
+        justify-content: center;
+        padding-top: 0;
+        padding-left: 0;
+    }
+    .dashboard-modal-container {
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        max-width: 100vw;
+        border-radius: 0;
+        border: none;
+    }
+}
+
+/* ==========================================================================
+   DETAIL CLOSE & DANGER ACTION BUTTONS
+   ========================================================================== */
+
+.detail-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.detail-close-btn:hover {
+    background-color: #f1f5f9;
+    color: #ef4444;
+}
+
+.btn-danger-action {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-danger-action:hover {
+    background-color: #dc2626;
+}
+
+
+/* ==========================================================================
+   CONFIGURATION SUB-NAV & CONFIG-TABLE STYLES
+   ========================================================================== */
+
+.config-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.config-sub-nav {
+    display: flex;
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 16px;
+    gap: 8px;
+}
+
+.sub-nav-item {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.sub-nav-item:hover {
+    background-color: #f1f5f9;
+    color: var(--text-primary);
+}
+
+.sub-nav-item.active {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    font-weight: 400;
+}
+
+.config-sub-content {
+    padding: 24px;
+}
+
+.sub-tab-panel h3 {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.sub-tab-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.config-table th {
+    font-weight: 400;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    padding: 12px 16px;
+}
+
+.config-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.config-table tr:last-child td {
+    border-bottom: none;
+}
+
+@keyframes modalPopup {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================================================
+   JIRA STATUS DROPDOWN & TRANSITION MODAL UX
+   ========================================================================== */
+
+.jira-status-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.jira-status-btn {
+    border: 1px solid var(--border-color);
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition-fast);
+    background-color: var(--bg-card);
+}
+
+.jira-status-btn:hover {
+    filter: brightness(0.95);
+}
+
+/* Status variants for Jira dropdown button */
+.jira-status-btn.trial { background-color: var(--status-trial-bg); color: var(--status-trial-text); border-color: var(--status-trial-text); }
+.jira-status-btn.selfrepair { background-color: var(--status-selfrepair-bg); color: var(--status-selfrepair-text); border-color: var(--status-selfrepair-text); }
+.jira-status-btn.supplier { background-color: var(--status-supplier-bg); color: var(--status-supplier-text); border-color: var(--status-supplier-text); }
+.jira-status-btn.sample { background-color: var(--status-sample-bg); color: var(--status-sample-text); border-color: var(--status-sample-text); }
+.jira-status-btn.accepted { background-color: var(--status-accepted-bg); color: var(--status-accepted-text); border-color: var(--status-accepted-text); }
+.jira-status-btn.import { background-color: #f1f5f9; color: #475569; border-color: #94a3b8; }
+
+.jira-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 1010;
+    width: 250px;
+    overflow: hidden;
+    animation: dashboardFadeIn 0.15s ease-out;
+}
+
+.jira-dropdown-menu .dropdown-title {
+    font-size: 10px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    padding: 8px 16px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.jira-dropdown-menu .dropdown-item {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.jira-dropdown-menu .dropdown-item:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+/* Jira Transition Modal Form styles */
+.jira-transition-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.jira-transition-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+}
+
+.jira-transition-header h2 {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.jira-transition-header .highlight-code {
+    font-weight: 300;
+    color: var(--primary-color);
+}
+
+.jira-transition-path {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.jira-status-node {
+    font-size: 12px;
+    font-weight: 400;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.jira-status-node.from {
+    background-color: #f1f5f9;
+    color: var(--text-secondary);
+}
+
+.jira-status-node.to {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-weight: 300;
+}
+
+.jira-path-arrow {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+.jira-transition-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.jira-card-style {
+    border: 1px solid var(--border-color);
+    background-color: #f8fafc;
+    border-radius: var(--radius-md);
+    padding: 16px;
+}
+
+/* Drag and Drop style */
+.jira-attachments-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.jira-attachments-section label {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+}
+
+.jira-upload-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.jira-dropzone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    text-align: center;
+    background-color: #f8fafc;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.jira-dropzone:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.jira-upload-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--text-secondary);
+}
+
+.jira-dropzone span {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.jira-dropzone b {
+    color: var(--primary-color);
+    font-weight: 300;
+}
+
+.jira-attachments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.jira-attach-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--bg-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.jira-attach-card:hover {
+    background-color: #f8fafc;
+}
+
+.jira-attach-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.jira-attach-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.jira-attach-info .name {
+    font-size: 12px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jira-attach-info .size {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.jira-attach-remove {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: var(--transition-fast);
+}
+
+.jira-attach-remove:hover {
+    color: #ef4444;
+}
+
+/* Jira Action Footer */
+.jira-transition-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
+.btn-jira-primary {
+    background-color: #0052cc; /* Jira Blue */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-jira-primary:hover {
+    background-color: #0065ff;
+}
+
+.btn-jira-cancel {
+    background: none;
+    border: none;
+    color: #42526e;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-jira-cancel:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}

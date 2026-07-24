@@ -2,39 +2,20 @@ from pydantic import BaseModel, Field
 from datetime import date, datetime
 from typing import List, Optional
 
-# --- Transaction Log Schemas ---
-class TransactionLogBase(BaseModel):
-    status: str
-    notes: Optional[str] = None
-    technician: str
+# --- Mold Event Schemas (Jira-style Activity) ---
+class MoldEventBase(BaseModel):
+    type: str
+    name: str
+    content: Optional[str] = None
+    tagged_staff: Optional[str] = None
+    images: Optional[str] = None
+    attachments: Optional[str] = None
 
-class TransactionLogCreate(TransactionLogBase):
-    mold_code: str
-
-class TransactionLogResponse(TransactionLogBase):
+class MoldEventResponse(MoldEventBase):
     id: int
     mold_code: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# --- Error Log Schemas ---
-class ErrorLogBase(BaseModel):
-    description: str
-    cause: Optional[str] = None
-    solution: Optional[str] = None
-    image_url: Optional[str] = None
-    repair_deadline: Optional[date] = None
-    supplier_pickup_status: Optional[str] = None
-
-class ErrorLogCreate(ErrorLogBase):
-    mold_code: str
-
-class ErrorLogResponse(ErrorLogBase):
-    id: int
-    mold_code: str
-    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
@@ -60,23 +41,9 @@ class MoldResponse(MoldBase):
     class Config:
         from_attributes = True
 
-# --- Mold File Schemas ---
-class MoldFileResponse(BaseModel):
-    id: int
-    mold_code: str
-    file_url: str
-    file_name: str
-    is_attachment: bool
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# Chi tiết khuôn bao gồm cả lịch sử giao dịch, nhật ký báo lỗi và danh sách hình ảnh/tệp đính kèm
+# Chi tiết khuôn bao gồm cả lịch sử các sự kiện liên kết (Jira-style events)
 class MoldDetailResponse(MoldResponse):
-    transaction_logs: List[TransactionLogResponse] = []
-    error_logs: List[ErrorLogResponse] = []
-    files: List[MoldFileResponse] = []
+    events: List[MoldEventResponse] = []
 
     class Config:
         from_attributes = True
@@ -91,14 +58,31 @@ class MoldAcceptReport(BaseModel):
     acceptance_feedback: str
     technician: str
 
-# --- Zalo Notification Schemas ---
-class ZaloNotificationResponse(BaseModel):
+# --- Staff Schemas ---
+class StaffBase(BaseModel):
+    name: str
+    role: str
+
+class StaffCreate(StaffBase):
+    pass
+
+class StaffResponse(StaffBase):
     id: int
-    recipient: str
-    message: str
-    image_url: Optional[str] = None
-    status: str
-    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- Status Schemas ---
+class StatusBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = None
+
+class StatusCreate(StatusBase):
+    pass
+
+class StatusResponse(StatusBase):
+    id: int
 
     class Config:
         from_attributes = True

@@ -83,8 +83,9 @@ def test_get_mold_detail():
     assert response.status_code == 200
     data = response.json()
     assert data["code"] == "MK-TEST-01"
-    assert len(data["transaction_logs"]) == 1
-    assert data["transaction_logs"][0]["status"] == "Khuôn nhập kho"
+    assert len(data["events"]) == 1
+    assert data["events"][0]["name"] == "Khuôn nhập kho"
+    assert data["events"][0]["type"] == "transaction"
 
 def test_update_mold_status():
     payload = {
@@ -98,7 +99,7 @@ def test_update_mold_status():
     assert data["status"] == "Thử khuôn"
 
 def test_report_mold_error():
-    # Gọi dạng Form data (multipart/form-data)
+    # Gọi dạng Form data (multipart/form-data) vào endpoint mới /issue
     form_data = {
         "description": "Lỗi nứt góc sản phẩm dập thử",
         "cause": "Lực nén quá cao hoặc lõi khuôn quá mỏng",
@@ -106,17 +107,20 @@ def test_report_mold_error():
         "status": "Nhà máy tự sửa",
         "technician": "Kỹ thuật viên Sửa Chữa"
     }
-    response = client.post("/api/molds/MK-TEST-01/error", data=form_data)
+    response = client.post("/api/molds/MK-TEST-01/issue", data=form_data)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "Nhà máy tự sửa"
     
-    # Kiểm tra xem error logs và transaction logs có được lưu đúng
+    # Kiểm tra xem các sự kiện có được lưu vào bảng mold_events đúng
     detail_resp = client.get("/api/molds/MK-TEST-01")
     detail = detail_resp.json()
-    assert len(detail["error_logs"]) == 1
-    assert detail["error_logs"][0]["description"] == "Lỗi nứt góc sản phẩm dập thử"
-    assert any(log["status"] == "Nhà máy tự sửa" for log in detail["transaction_logs"])
+    
+    # Sự kiện bao gồm: 1. Khởi tạo nhập kho, 2. Cập nhật Thử khuôn, 3. Báo lỗi sự cố
+    assert len(detail["events"]) == 3
+    issue_event = next(e for e in detail["events"] if e["type"] == "issue")
+    assert "Lỗi nứt góc sản phẩm dập thử" in issue_event["content"]
+    assert issue_event["tagged_staff"] == "Kỹ thuật viên Sửa Chữa"
 
 def test_accept_mold():
     form_data = {

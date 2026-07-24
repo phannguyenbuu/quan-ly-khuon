@@ -19,58 +19,40 @@ class Mold(Base):
     acceptance_attachment_url = Column(String(255), nullable=True)
     acceptance_attachment_name = Column(String(255), nullable=True)
 
-    # Quan hệ với các bảng khác
-    transaction_logs = relationship("TransactionLog", back_populates="mold", cascade="all, delete-orphan")
-    error_logs = relationship("ErrorLog", back_populates="mold", cascade="all, delete-orphan")
-    files = relationship("MoldFile", back_populates="mold", cascade="all, delete-orphan")
+    # Vùng liên kết sự kiện (Jira-style Activity Log)
+    events = relationship("MoldEvent", back_populates="mold", cascade="all, delete-orphan")
 
-class TransactionLog(Base):
-    __tablename__ = "transaction_logs"
+class MoldEvent(Base):
+    __tablename__ = "mold_events"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     mold_code = Column(String(50), ForeignKey("molds.code", ondelete="CASCADE"), nullable=False)
-    status = Column(String(50), nullable=False)
-    notes = Column(Text, nullable=True)
-    technician = Column(String(100), nullable=False)
+    type = Column(String(50), nullable=False)  # 'transaction' (cập nhật trạng thái) | 'issue' (sự cố kỹ thuật) | 'acceptance' (nghiệm thu) | 'file_upload' (tải lên tài liệu)
+    name = Column(String(100), nullable=False)  # Tên sự kiện (ví dụ: 'Thử khuôn', 'Nhà máy tự sửa', 'Báo lỗi')
+    content = Column(Text, nullable=True)  # Nội dung chi tiết (ví dụ: mô tả lỗi, nguyên nhân, giải pháp, ý kiến khách)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    
+    # Staff liên quan (được tag vào)
+    tagged_staff = Column(Text, nullable=True)  # Chuỗi tên staff ngăn cách bởi dấu phẩy, ví dụ: "Nguyễn Văn A"
+    
+    # File đính kèm lưu dưới dạng chuỗi ngăn cách bởi dấu phẩy
+    images = Column(Text, nullable=True)  # Danh sách URL ảnh: "/uploads/img1.jpg,/uploads/img2.jpg"
+    attachments = Column(Text, nullable=True)  # Tệp đính kèm dạng JSON string: '[{"name": "file.pdf", "url": "/uploads/file.pdf"}]'
 
-    mold = relationship("Mold", back_populates="transaction_logs")
+    mold = relationship("Mold", back_populates="events")
 
-class ErrorLog(Base):
-    __tablename__ = "error_logs"
+class Staff(Base):
+    __tablename__ = "staff"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    mold_code = Column(String(50), ForeignKey("molds.code", ondelete="CASCADE"), nullable=False)
-    description = Column(Text, nullable=False)
-    cause = Column(Text, nullable=True)
-    solution = Column(Text, nullable=True)
-    image_url = Column(String(255), nullable=True)
-    attachment_url = Column(String(255), nullable=True)
-    attachment_name = Column(String(255), nullable=True)
-    repair_deadline = Column(Date, nullable=True)
-    supplier_pickup_status = Column(String(100), nullable=True)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    name = Column(String(100), nullable=False)
+    role = Column(String(50), nullable=False)  # 'Thợ khuôn' | 'QC' | 'Quản lý'
 
-    mold = relationship("Mold", back_populates="error_logs")
-
-class MoldFile(Base):
-    __tablename__ = "mold_files"
+class Status(Base):
+    __tablename__ = "statuses"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    mold_code = Column(String(50), ForeignKey("molds.code", ondelete="CASCADE"), nullable=False)
-    file_url = Column(String(255), nullable=False)
-    file_name = Column(String(255), nullable=False)
-    is_attachment = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-
-    mold = relationship("Mold", back_populates="files")
-
-class ZaloNotification(Base):
-    __tablename__ = "zalo_notifications"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    recipient = Column(String(50), nullable=False)  # 'Thợ khuôn' | 'QC' | 'Quản lý'
-    message = Column(Text, nullable=False)
-    image_url = Column(String(255), nullable=True)
-    status = Column(String(50), default="Đã gửi qua Zalo", nullable=False)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    name = Column(String(50), unique=True, index=True, nullable=False)
+    description = Column(Text, nullable=True)
+    color = Column(String(50), nullable=True)

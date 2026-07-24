@@ -1,19 +1,15 @@
 import os
-import sys
-import uuid
 import shutil
-from datetime import date
-from typing import Optional, List
-
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from datetime import date
+from typing import List, Optional
 
-# Thêm thư mục gốc vào path để uvicorn/python tìm thấy package backend
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
+# Thêm thư mục gốc vào path để import các module con
+import sys
+PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PARENT_DIR not in sys.path:
     sys.path.append(PARENT_DIR)
 
@@ -26,10 +22,35 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Tự động tạo bảng trong Database (nếu chưa tồn tại)
 models.Base.metadata.create_all(bind=database.engine)
 
+# Nạp dữ liệu cấu hình mặc định (Nhân sự & Trạng thái) nếu trống
+db = database.SessionLocal()
+try:
+    if db.query(models.Staff).count() == 0:
+        db.add_all([
+            models.Staff(name="Kỹ thuật viên Sửa Chữa", role="Thợ khuôn"),
+            models.Staff(name="Kỹ sư Đảm bảo Chất lượng (QC)", role="QC"),
+            models.Staff(name="Quản lý Xưởng sản xuất", role="Quản lý")
+        ])
+        db.commit()
+    if db.query(models.Status).count() == 0:
+        db.add_all([
+            models.Status(name="Khuôn nhập kho", description="Khai báo khuôn mới về xưởng sản xuất", color="import"),
+            models.Status(name="Thử khuôn", description="Lắp khuôn lên máy chạy thử sản phẩm mẫu", color="trial"),
+            models.Status(name="Gửi mẫu khách", description="Dập mẫu đạt và gửi mẫu đi cho khách duyệt", color="sample"),
+            models.Status(name="Nhà máy tự sửa", description="Phát hiện lỗi chạy thử, thợ xưởng tự khắc phục", color="selfrepair"),
+            models.Status(name="NCC đã lấy khuôn", description="Bàn giao lại cho NCC đem về bảo hành/sửa đổi", color="supplier"),
+            models.Status(name="Khách duyệt (Sản xuất)", description="Khách ký duyệt chất lượng mẫu, đưa vào chạy hàng loạt", color="accepted")
+        ])
+        db.commit()
+except Exception as e:
+    print(f"Lỗi khi nạp dữ liệu mặc định: {e}")
+finally:
+    db.close()
+
 app = FastAPI(
     title="Hệ thống Quản lý Khuôn API",
     version="1.1",
-    description="API cho ứng dụng quản lý quy trình chạy thử và cập nhật lỗi khuôn mẫu"
+    description="API cho ứng dụng quản lý quy trình chạy thử và cập nhật sự cố khuôn mẫu"
 )
 
 # Cấu hình CORS
@@ -48,218 +69,146 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- API Endpoints ---
-
 @app.get("/api/db-status")
-def get_db_status(db: Session = Depends(database.get_db)):
+def get_db_status():
     """Kiểm tra tình trạng kết nối tới cơ sở dữ liệu PostgreSQL/SQLite."""
     try:
-        db.execute(text("SELECT 1"))
+        db = database.SessionLocal()
+        db.execute(database.text("SELECT 1"))
+        db.close()
         return {
             "status": "connected",
             "database": database.DATABASE_URL.split("@")[-1] if "@" in database.DATABASE_URL else "SQLite/Local"
         }
     except Exception as e:
-        return {
-            "status": "disconnected",
-            "error": str(e)
-        }
+        return {"status": "disconnected", "error": str(e)}
 
 @app.get("/api/dashboard")
 def get_dashboard(db: Session = Depends(database.get_db)):
-    """Lấy dữ liệu thống kê cho Dashboard và biểu đồ."""
+    """Lấy số liệu thống kê tổng hợp phục vụ màn hình Dashboard."""
     return crud.get_dashboard_stats(db)
 
 @app.get("/api/molds", response_model=list[schemas.MoldResponse])
-def get_molds(
-    search: Optional[str] = None,
-    status: Optional[str] = None,
-    db: Session = Depends(database.get_db)
-):
-    """Lấy danh sách khuôn mẫu, hỗ trợ tìm kiếm và lọc trạng thái."""
+def read_molds(search: Optional[str] = None, status: Optional[str] = None, db: Session = Depends(database.get_db)):
+    """Lấy danh sách khuôn sản xuất, hỗ trợ tìm kiếm theo Mã/Tên/NCC và lọc trạng thái."""
     return crud.get_molds(db, search=search, status=status)
 
 @app.get("/api/molds/{code}", response_model=schemas.MoldDetailResponse)
-def get_mold_detail(code: str, db: Session = Depends(database.get_db)):
-    """Lấy chi tiết hồ sơ kỹ thuật, lịch sử giao dịch và lỗi của một khuôn."""
+def read_mold_detail(code: str, db: Session = Depends(database.get_db)):
+    """Lấy thông tin chi tiết một khuôn mẫu kèm theo dòng thời gian lịch sử sự kiện liên kết."""
     db_mold = crud.get_mold(db, code)
     if not db_mold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy khuôn với mã: {code}"
-        )
+        raise HTTPException(status_code=404, detail="Không tìm thấy khuôn yêu cầu")
     return db_mold
 
 @app.post("/api/molds", response_model=schemas.MoldResponse, status_code=status.HTTP_201_CREATED)
-def create_mold(mold: schemas.MoldCreate, db: Session = Depends(database.get_db)):
-    """Khai báo nhập kho khuôn mới (Khởi tạo quy trình)."""
+def create_new_mold(mold: schemas.MoldCreate, db: Session = Depends(database.get_db)):
+    """Khai báo nhập kho khuôn mẫu sản xuất mới."""
     db_mold = crud.get_mold(db, mold.code)
     if db_mold:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Mã khuôn '{mold.code}' đã tồn tại trong hệ thống."
-        )
+        raise HTTPException(status_code=400, detail=f"Mã khuôn '{mold.code}' đã tồn tại trong hệ thống")
     return crud.create_mold(db, mold)
 
 @app.post("/api/molds/{code}/update", response_model=schemas.MoldResponse)
-def update_mold_status(
-    code: str,
-    update_data: schemas.MoldStatusUpdate,
-    db: Session = Depends(database.get_db)
-):
-    """Cập nhật trạng thái và ghi nhận lịch sử giao dịch thông thường."""
-    db_mold = crud.update_mold_status(
-        db,
-        code=code,
-        status=update_data.status,
-        notes=update_data.notes,
-        technician=update_data.technician
-    )
+def update_existing_mold_status(code: str, req: schemas.MoldStatusUpdate, db: Session = Depends(database.get_db)):
+    """Cập nhật tiến trình/trạng thái mới cho khuôn."""
+    db_mold = crud.update_mold_status(db, code, req.status, req.notes, req.technician)
     if not db_mold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy khuôn với mã: {code}"
-        )
+        raise HTTPException(status_code=404, detail="Không tìm thấy khuôn yêu cầu")
     return db_mold
 
-@app.post("/api/molds/{code}/error", response_model=schemas.MoldResponse)
-def report_mold_error(
+@app.post("/api/molds/{code}/issue", response_model=schemas.MoldResponse)
+def report_mold_issue(
     code: str,
     description: str = Form(...),
     cause: Optional[str] = Form(None),
     solution: Optional[str] = Form(None),
-    status: str = Form(...),  # Thường là 'Nhà máy tự sửa' hoặc 'NCC đã lấy khuôn'
+    status: str = Form(...),
     technician: str = Form(...),
-    image: Optional[UploadFile] = File(None),
     repair_deadline: Optional[str] = Form(None),
     supplier_pickup_status: Optional[str] = Form(None),
+    error_image: Optional[UploadFile] = File(None),
     db: Session = Depends(database.get_db)
 ):
-    """Ghi nhận lỗi kỹ thuật chạy thử khuôn và tải ảnh lỗi lên máy chủ."""
-    image_url = None
-    if image and image.filename:
-        # Tạo tên file duy nhất tránh trùng lặp tệp
-        file_ext = os.path.splitext(image.filename)[1]
-        unique_filename = f"{uuid.uuid4().hex}{file_ext}"
-        filepath = os.path.join(UPLOAD_DIR, unique_filename)
-        
-        try:
-            with open(filepath, "wb") as buffer:
-                shutil.copyfileobj(image.file, buffer)
-            # Lưu đường dẫn tương đối phục vụ qua API tĩnh
-            image_url = f"/uploads/{unique_filename}"
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Lỗi khi lưu ảnh tải lên: {str(e)}"
-            )
-
-    parsed_deadline = None
+    """Báo cáo sự cố kỹ thuật của khuôn trong quá trình chạy thử (Nhà máy tự sửa hoặc NCC lấy đi)."""
+    deadline_date = None
     if repair_deadline:
         try:
-            from datetime import datetime
-            parsed_deadline = datetime.strptime(repair_deadline, "%Y-%m-%d").date()
-        except Exception:
+            deadline_date = date.fromisoformat(repair_deadline)
+        except ValueError:
             pass
+            
+    saved_image_url = None
+    if error_image and error_image.filename:
+        file_path = os.path.join(UPLOAD_DIR, error_image.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(error_image.file, buffer)
+        saved_image_url = f"/uploads/{error_image.filename}"
 
-    db_mold = crud.create_mold_error_log(
+    db_mold = crud.create_mold_issue_event(
         db,
         code=code,
         description=description,
         cause=cause,
         solution=solution,
-        image_url=image_url,
+        image_url=saved_image_url,
         status=status,
         technician=technician,
-        repair_deadline=parsed_deadline,
+        repair_deadline=deadline_date,
         supplier_pickup_status=supplier_pickup_status
     )
+    
     if not db_mold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy khuôn với mã: {code}"
-        )
+        raise HTTPException(status_code=404, detail="Không tìm thấy khuôn yêu cầu")
     return db_mold
 
 @app.post("/api/molds/{code}/accept", response_model=schemas.MoldResponse)
-def accept_mold(
+def accept_mold_delivery(
     code: str,
     acceptance_feedback: str = Form(...),
     technician: str = Form(...),
-    image: Optional[UploadFile] = File(None),
-    attachment: Optional[UploadFile] = File(None),
+    acceptance_image: Optional[UploadFile] = File(None),
+    acceptance_attachment: Optional[UploadFile] = File(None),
     db: Session = Depends(database.get_db)
 ):
-    """Ký duyệt nghiệm thu khuôn mẫu từ phía khách hàng duyệt kèm ảnh và tài liệu đính kèm."""
-    image_url = None
-    if image and image.filename:
-        file_ext = os.path.splitext(image.filename)[1]
-        unique_filename = f"accept_{uuid.uuid4().hex}{file_ext}"
-        filepath = os.path.join(UPLOAD_DIR, unique_filename)
-        try:
-            with open(filepath, "wb") as buffer:
-                shutil.copyfileobj(image.file, buffer)
-            image_url = f"/uploads/{unique_filename}"
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Lỗi khi lưu ảnh nghiệm thu: {str(e)}"
-            )
+    """Nghiệm thu đạt chất lượng sản phẩm chạy thử, đưa khuôn vào sản xuất đại trà."""
+    saved_image_url = None
+    if acceptance_image and acceptance_image.filename:
+        file_path = os.path.join(UPLOAD_DIR, acceptance_image.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(acceptance_image.file, buffer)
+        saved_image_url = f"/uploads/{acceptance_image.filename}"
 
-    attachment_url = None
-    attachment_name = None
-    if attachment and attachment.filename:
-        file_ext = os.path.splitext(attachment.filename)[1]
-        unique_filename = f"accept_doc_{uuid.uuid4().hex}{file_ext}"
-        filepath = os.path.join(UPLOAD_DIR, unique_filename)
-        try:
-            with open(filepath, "wb") as buffer:
-                shutil.copyfileobj(attachment.file, buffer)
-            attachment_url = f"/uploads/{unique_filename}"
-            attachment_name = attachment.filename
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Lỗi khi lưu tài liệu nghiệm thu: {str(e)}"
-            )
+    saved_attach_url = None
+    saved_attach_name = None
+    if acceptance_attachment and acceptance_attachment.filename:
+        file_path = os.path.join(UPLOAD_DIR, acceptance_attachment.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(acceptance_attachment.file, buffer)
+        saved_attach_url = f"/uploads/{acceptance_attachment.filename}"
+        saved_attach_name = acceptance_attachment.filename
 
     db_mold = crud.accept_mold(
         db,
         code=code,
         feedback=acceptance_feedback,
         technician=technician,
-        image_url=image_url,
-        attachment_url=attachment_url,
-        attachment_name=attachment_name
+        image_url=saved_image_url,
+        attachment_url=saved_attach_url,
+        attachment_name=saved_attach_name
     )
     if not db_mold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy khuôn với mã: {code}"
-        )
+        raise HTTPException(status_code=404, detail="Không tìm thấy khuôn yêu cầu")
     return db_mold
 
 @app.delete("/api/molds/{code}")
-def delete_mold(code: str, db: Session = Depends(database.get_db)):
-    """Xóa khuôn mẫu và toàn bộ nhật ký sự kiện, tệp đính kèm liên quan."""
-    db_mold = crud.get_mold(db, code=code)
+def delete_mold_from_db(code: str, db: Session = Depends(database.get_db)):
+    """Xóa bỏ khuôn mẫu hoàn toàn khỏi hệ thống dữ liệu."""
+    db_mold = crud.get_mold(db, code)
     if not db_mold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy khuôn với mã: {code}"
-        )
-    
-    # Xóa tệp vật lý của các file đính kèm liên quan
-    for file in db_mold.files:
-        file_path = os.path.join(PARENT_DIR, file.file_url.lstrip("/"))
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                print(f"Lỗi khi xóa tệp vật lý: {e}")
-                
+        raise HTTPException(status_code=404, detail="Không tìm thấy khuôn yêu cầu")
     crud.delete_mold(db, db_mold)
-    return {"detail": f"Đã xóa thành công khuôn {code} và toàn bộ nhật ký liên quan"}
+    return {"detail": "Đã xóa khuôn thành công"}
 
 @app.post("/api/molds/{code}/files")
 def upload_mold_files(
@@ -268,63 +217,84 @@ def upload_mold_files(
     is_attachment: bool = Form(False),
     db: Session = Depends(database.get_db)
 ):
-    """Tải lên nhiều hình ảnh hoặc tài liệu đính kèm cho khuôn."""
-    db_mold = crud.get_mold(db, code=code)
+    """Tải lên nhiều tệp tin (hình ảnh / tài liệu đính kèm) cho khuôn mẫu và ghi nhận sự kiện."""
+    db_mold = crud.get_mold(db, code)
     if not db_mold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy khuôn với mã: {code}"
-        )
+        raise HTTPException(status_code=404, detail="Không tìm thấy khuôn")
     
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    saved_files = []
-    from datetime import datetime
+    uploaded_images = []
+    uploaded_docs = []
+    
     for file in files:
-        # Tạo tên file độc nhất để không trùng lặp
-        unique_filename = f"{code}_{int(datetime.now().timestamp())}_{file.filename}"
-        file_path = os.path.join(UPLOAD_DIR, unique_filename)
-        
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
-        db_file = models.MoldFile(
-            mold_code=code,
-            file_url=f"/uploads/{unique_filename}",
-            file_name=file.filename,
-            is_attachment=is_attachment
-        )
-        db.add(db_file)
-        saved_files.append(db_file)
         
-    db.commit()
-    return {"detail": "Tải lên thành công", "files": [f.file_name for f in saved_files]}
+        file_url = f"/uploads/{file.filename}"
+        if is_attachment:
+            uploaded_docs.append({"name": file.filename, "url": file_url})
+        else:
+            uploaded_images.append(file_url)
+            
+    import json
+    images_str = ",".join(uploaded_images) if uploaded_images else None
+    docs_json = json.dumps(uploaded_docs) if uploaded_docs else None
+    
+    crud.create_mold_event(
+        db,
+        mold_code=code,
+        event_type="file_upload",
+        name="Tải lên tài liệu" if is_attachment else "Thêm ảnh vào gallery",
+        content=f"Đã thêm {len(files)} tệp tin mới.",
+        tagged_staff="Hệ thống",
+        images=images_str,
+        attachments=docs_json
+    )
+    
+    return {"detail": "Tải lên thành công"}
 
 @app.delete("/api/files/{file_id}")
 def delete_mold_file(file_id: int, db: Session = Depends(database.get_db)):
-    """Xóa một tệp đính kèm hoặc hình ảnh cụ thể khỏi khuôn."""
-    db_file = db.query(models.MoldFile).filter(models.MoldFile.id == file_id).first()
-    if not db_file:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy tệp tin"
-        )
+    """Xóa bỏ tài liệu đính kèm hoặc hình ảnh dựa trên ID sự kiện tải lên."""
+    db_event = db.query(models.MoldEvent).filter(models.MoldEvent.id == file_id).first()
+    if not db_event:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tệp tin")
     
-    # Xóa tệp vật lý
-    file_path = os.path.join(PARENT_DIR, db_file.file_url.lstrip("/"))
-    if os.path.exists(file_path):
+    import json
+    # Xóa ảnh vật lý
+    if db_event.images:
+        for img in db_event.images.split(','):
+            file_path = os.path.join(PARENT_DIR, img.lstrip('/'))
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
+    # Xóa file tài liệu vật lý
+    if db_event.attachments:
         try:
-            os.remove(file_path)
-        except Exception as e:
-            print(f"Lỗi khi xóa tệp vật lý: {e}")
+            parsed = json.loads(db_event.attachments)
+            for f in parsed:
+                file_path = os.path.join(PARENT_DIR, f["url"].lstrip('/'))
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+        except:
+            pass
             
-    db.delete(db_file)
+    db.delete(db_event)
     db.commit()
     return {"detail": "Đã xóa tệp tin thành công"}
 
-@app.get("/api/zalo-notifications", response_model=List[schemas.ZaloNotificationResponse])
-def get_zalo_notifications(db: Session = Depends(database.get_db)):
-    """Lấy danh sách lịch sử các thông báo Zalo đã được hệ thống tự động mô phỏng gửi đi."""
-    return db.query(models.ZaloNotification).order_by(models.ZaloNotification.created_at.desc()).limit(50).all()
+@app.get("/api/staff", response_model=list[schemas.StaffResponse])
+def get_staff(db: Session = Depends(database.get_db)):
+    return db.query(models.Staff).all()
+
+@app.get("/api/statuses", response_model=list[schemas.StatusResponse])
+def get_statuses(db: Session = Depends(database.get_db)):
+    return db.query(models.Status).all()
 
 # --- Phục vụ file tĩnh ---
 
