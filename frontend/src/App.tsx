@@ -937,7 +937,7 @@ export default function App() {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', marginTop: '8px' }}>
                           <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
-                          <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+                          <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', marginTop: '4px', overflowX: 'auto', paddingBottom: '8px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
                             {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
                               if (status === selectedMoldDetail.status) return null;
                               const btnClass = 
