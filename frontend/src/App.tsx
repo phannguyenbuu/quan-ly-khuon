@@ -1910,25 +1910,77 @@ export default function App() {
       {isUpdateModalOpen && (
         <div className="modal-backdrop" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsUpdateModalOpen(false); }}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', margin: 0 }}>Cập nhật quy trình</h2>
-              <button 
-                className="modal-close-btn" 
-                onClick={() => setIsUpdateModalOpen(false)} 
-                title="Đóng cửa sổ"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-secondary)'
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '18px', height: '18px' }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-            <div className="modal-body">
-
-              <form onSubmit={handleUpdateStatus}>
+            <form onSubmit={handleUpdateStatus}>
+              <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--border-color)', position: 'relative', gap: '12px' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                    CẬP NHẬT:
+                  </span>
+                  <select 
+                    id="header-update-status" 
+                    required 
+                    value={updateStatus} 
+                    onChange={(e) => setUpdateStatus(e.target.value)}
+                    style={{ 
+                      fontSize: '14px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-primary)', 
+                      border: '1px solid var(--border-color)', 
+                      borderRadius: '4px', 
+                      padding: '6px 12px',
+                      backgroundColor: '#fff',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      maxWidth: '240px'
+                    }}
+                  >
+                    <option value="" disabled>-- Chọn trạng thái --</option>
+                    <option value="Thử khuôn">Thử khuôn</option>
+                    <option value="Gửi mẫu khách">Gửi mẫu khách</option>
+                    <option value="Nhà máy tự sửa">Nhà máy tự sửa</option>
+                    <option value="NCC đã lấy khuôn">NCC đã lấy khuôn</option>
+                    <option value="Khách duyệt (Sản xuất)">Khách duyệt (Sản xuất)</option>
+                    <option value="Khuôn nhập kho">Khuôn nhập kho</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                    style={{ 
+                      padding: '6px 16px', 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      backgroundColor: '#10b981', 
+                      color: '#fff', 
+                      border: 'none', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    Xác nhận
+                  </button>
+                  <button 
+                    type="button"
+                    className="modal-close-btn" 
+                    onClick={() => setIsUpdateModalOpen(false)} 
+                    title="Đóng cửa sổ"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px'
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '18px', height: '18px' }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                </div>
+              </div>
+              <div className="modal-body">
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="update-select-mold">KHUÔN CẦN CẬP NHẬT *</label>
@@ -1954,31 +2006,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="form-group status-update-group">
-                  <label htmlFor="update-status">CẬP NHẬT TRẠNG THÁI MỚI *</label>
-                  {updateStatus ? (
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span className={`status-badge-styled ${
-                        updateStatus === 'Thử khuôn' ? 'trial' :
-                        updateStatus === 'Nhà máy tự sửa' ? 'selfrepair' :
-                        updateStatus === 'NCC đã lấy khuôn' ? 'supplier' :
-                        updateStatus === 'Gửi mẫu khách' ? 'sample' :
-                        updateStatus === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
-                      }`} style={{ fontSize: '13px', padding: '6px 16px', borderRadius: '4px', fontWeight: '600' }}>
-                        {updateStatus}
-                      </span>
-                    </div>
-                  ) : (
-                    <select id="update-status" required value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)}>
-                      <option value="" disabled>-- Chọn trạng thái cập nhật tiếp theo --</option>
-                      <option value="Thử khuôn">Thử khuôn (Chạy thử mẫu)</option>
-                      <option value="Gửi mẫu khách">Gửi mẫu khách (Khách duyệt mẫu)</option>
-                      <option value="Nhà máy tự sửa">Nhà máy tự sửa (Phát hiện lỗi & tự khắc phục)</option>
-                      <option value="NCC đã lấy khuôn">NCC đã lấy khuôn (Chuyển trả đơn vị chế tạo sửa)</option>
-                      <option value="Khách duyệt (Sản xuất)">Khách duyệt (Sản xuất) (Ký duyệt nghiệm thu)</option>
-                    </select>
-                  )}
-                </div>
+
 
                 {/* TRƯỜNG ĐỘNG CHO TRẠNG THÁI LỖI */}
                 {(updateStatus === 'Nhà máy tự sửa' || updateStatus === 'NCC đã lấy khuôn') && (
@@ -2012,44 +2040,64 @@ export default function App() {
                 {/* HỖ TRỢ UPLOAD HÌNH ẢNH / TÀI LIỆU KÈM THEO TRONG CẬP NHẬT TRẠNG THÁI */}
                 {updateStatus && (
                   <div className="form-row" style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-                    <div className="form-group">
-                      <label>ẢNH THỰC TẾ GIAO DỊCH (HỖ TRỢ CTRL+V)</label>
-                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-img')?.click()}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        <span>Nhấn để chọn ảnh hoặc <b>bấm Ctrl+V</b> để dán ảnh</span>
+                    <div className="form-group" style={{ width: '100%' }}>
+                      <label>ĐÍNH KÈM TÀI LIỆU / ẢNH THỰC TẾ (HỖ TRỢ KÉO THẢ & CTRL+V DÁN ẢNH)</label>
+                      <div 
+                        className="upload-drop-zone" 
+                        onClick={() => document.getElementById('modal-update-merged-file')?.click()}
+                        style={{
+                          border: '2px dashed var(--border-color)',
+                          padding: '24px',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          backgroundColor: '#fafafa',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '28px', height: '28px', color: 'var(--text-secondary)' }}>
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="17 8 12 3 7 8" />
+                          <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <span style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                          Kéo thả ảnh/tài liệu vào đây, bấm <b>Ctrl+V</b> để dán ảnh nhanh, hoặc click để chọn tệp tin
+                        </span>
                       </div>
-                      <input type="file" id="modal-update-img" style={{ display: 'none' }} accept="image/*" multiple onChange={(e) => {
-                        if (e.target.files) setSelectedImages(prev => [...prev, ...Array.from(e.target.files!)]);
-                      }} />
-                      
-                      {selectedImages.length > 0 && (
-                        <div className="selected-files-preview">
+                      <input 
+                        type="file" 
+                        id="modal-update-merged-file" 
+                        style={{ display: 'none' }} 
+                        multiple 
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            const list = Array.from(e.target.files);
+                            const images = list.filter(f => f.type.startsWith('image/'));
+                            const docs = list.filter(f => !f.type.startsWith('image/'));
+                            setSelectedImages(prev => [...prev, ...images]);
+                            setSelectedAttachments(prev => [...prev, ...docs]);
+                          }
+                        }} 
+                      />
+
+                      {/* Hiển thị các tệp đã chọn */}
+                      {(selectedImages.length > 0 || selectedAttachments.length > 0) && (
+                        <div className="selected-files-preview" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
                           {selectedImages.map((file, i) => (
-                            <div key={i} className="preview-file-badge">
+                            <div key={`img-${i}`} className="preview-file-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '4px', fontSize: '12px' }}>
                               <span>📸 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
-                              <button type="button" className="preview-file-remove" onClick={() => setSelectedImages(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                              <button type="button" className="preview-file-remove" style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', marginLeft: '4px' }} onClick={() => setSelectedImages(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
                             </div>
                           ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="form-group">
-                      <label>TÀI LIỆU / PHIẾU BÀN GIAO ĐÍNH KÈM</label>
-                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-doc')?.click()}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-                        <span>Chọn tài liệu giao dịch đi kèm (.pdf, .zip, .xlsx...)</span>
-                      </div>
-                      <input type="file" id="modal-update-doc" style={{ display: 'none' }} accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" multiple onChange={(e) => {
-                        if (e.target.files) setSelectedAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
-                      }} />
-                      
-                      {selectedAttachments.length > 0 && (
-                        <div className="selected-files-preview">
                           {selectedAttachments.map((file, i) => (
-                            <div key={i} className="preview-file-badge">
+                            <div key={`doc-${i}`} className="preview-file-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '4px', fontSize: '12px' }}>
                               <span>📄 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
-                              <button type="button" className="preview-file-remove" onClick={() => setSelectedAttachments(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                              <button type="button" className="preview-file-remove" style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', marginLeft: '4px' }} onClick={() => setSelectedAttachments(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
                             </div>
                           ))}
                         </div>
@@ -2058,16 +2106,10 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="form-actions" style={{ marginTop: '24px' }}>
-                  <button type="submit" className="btn-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                    Xác Nhận Cập Nhật Quy Trình
-                  </button>
-                </div>
-              </form>
             </div>
-          </div>
+          </form>
         </div>
+      </div>
       )}
 
       {/* ==========================================================================
