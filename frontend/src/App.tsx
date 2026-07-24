@@ -57,7 +57,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'lookup' | 'config'>('lookup');
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [configSubTab, setConfigSubTab] = useState<'nhan-su' | 'nha-cung-cap' | 'trang-thai-khuon'>('nhan-su');
-  const [jiraDropdownOpen, setJiraDropdownOpen] = useState(false);
+
   const [dbStaff, setDbStaff] = useState<any[]>([]);
   const [dbStatuses, setDbStatuses] = useState<any[]>([]);
 
@@ -919,42 +919,48 @@ export default function App() {
                     </div>
 
                     <div className="detail-body">
-                      {/* Trạng thái hiện tại (Jira transition dropdown) */}
-                      <div className="detail-status-row">
-                        <span className="info-label">Trạng thái hiện tại:</span>
-                        <div className="jira-status-dropdown-container">
-                          <button className={`jira-status-btn ${
+                      {/* Trạng thái hiện tại (Jira transition buttons) */}
+                      <div className="detail-status-row" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="info-label">Trạng thái hiện tại:</span>
+                          <span className={`status-badge-styled ${
                             selectedMoldDetail.status === 'Thử khuôn' ? 'trial' :
                             selectedMoldDetail.status === 'Nhà máy tự sửa' ? 'selfrepair' :
                             selectedMoldDetail.status === 'NCC đã lấy khuôn' ? 'supplier' :
                             selectedMoldDetail.status === 'Gửi mẫu khách' ? 'sample' :
                             selectedMoldDetail.status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
-                          }`} onClick={() => setJiraDropdownOpen(prev => !prev)}>
-                            {selectedMoldDetail.status} ▾
-                          </button>
-                          {jiraDropdownOpen && (
-                            <div className="jira-dropdown-menu">
-                              <div className="dropdown-title">CHUYỂN TRẠNG THÁI (JIRA UX)</div>
-                              {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
-                                if (status === selectedMoldDetail.status) return null;
-                                return (
-                                  <button 
-                                    key={status} 
-                                    className="dropdown-item" 
-                                    onClick={() => {
-                                      setJiraDropdownOpen(false);
-                                      setUpdateMoldCode(selectedMoldDetail.code);
-                                      setUpdateStatus(status);
-                                      setModalMode('update');
-                                      setIsModalOpen(true);
-                                    }}
-                                  >
-                                    Chuyển sang &ldquo;{status}&rdquo;
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
+                          }`}>
+                            {selectedMoldDetail.status}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', marginTop: '6px' }}>
+                          <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
+                          <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
+                              if (status === selectedMoldDetail.status) return null;
+                              const btnClass = 
+                                status === 'Thử khuôn' ? 'trial' :
+                                status === 'Nhà máy tự sửa' ? 'selfrepair' :
+                                status === 'NCC đã lấy khuôn' ? 'supplier' :
+                                status === 'Gửi mẫu khách' ? 'sample' :
+                                status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import';
+                              return (
+                                <button 
+                                  key={status} 
+                                  className={`jira-status-btn ${btnClass}`}
+                                  style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.15s ease' }}
+                                  onClick={() => {
+                                    setUpdateMoldCode(selectedMoldDetail.code);
+                                    setUpdateStatus(status);
+                                    setModalMode('update');
+                                    setIsModalOpen(true);
+                                  }}
+                                >
+                                  Chuyển sang &ldquo;{status}&rdquo;
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
 
