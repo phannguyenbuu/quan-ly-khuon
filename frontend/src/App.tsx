@@ -1547,13 +1547,19 @@ export default function App() {
                 <form onSubmit={handleUpdateStatus}>
                   <div className="form-row">
                     <div className="form-group">
-                      <label htmlFor="update-select-mold">CHỌN KHUÔN CẦN CẬP NHẬT *</label>
-                      <select id="update-select-mold" required value={updateMoldCode} onChange={(e) => setUpdateMoldCode(e.target.value)}>
-                        <option value="" disabled>-- Click chọn mã khuôn đang quản lý --</option>
-                        {molds.map(m => (
-                          <option key={m.code} value={m.code}>{m.code} - {m.name}</option>
-                        ))}
-                      </select>
+                      <label htmlFor="update-select-mold">KHUÔN CẦN CẬP NHẬT *</label>
+                      {selectedMoldDetail ? (
+                        <div style={{ padding: '10px 14px', backgroundColor: '#f1f5f9', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '600', fontSize: '13px', color: 'var(--text-primary)' }}>
+                          {selectedMoldDetail.code} - {selectedMoldDetail.name}
+                        </div>
+                      ) : (
+                        <select id="update-select-mold" required value={updateMoldCode} onChange={(e) => setUpdateMoldCode(e.target.value)}>
+                          <option value="" disabled>-- Click chọn mã khuôn đang quản lý --</option>
+                          {molds.map(m => (
+                            <option key={m.code} value={m.code}>{m.code} - {m.name}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                     <div className="form-group">
                       <label htmlFor="update-technician">HỌ TÊN NGƯỜI CẬP NHẬT *</label>
@@ -1566,14 +1572,28 @@ export default function App() {
 
                   <div className="form-group status-update-group">
                     <label htmlFor="update-status">CẬP NHẬT TRẠNG THÁI MỚI *</label>
-                    <select id="update-status" required value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)}>
-                      <option value="" disabled>-- Chọn trạng thái cập nhật tiếp theo --</option>
-                      <option value="Thử khuôn">Thử khuôn (Chạy thử mẫu)</option>
-                      <option value="Gửi mẫu khách">Gửi mẫu khách (Khách duyệt mẫu)</option>
-                      <option value="Nhà máy tự sửa">Nhà máy tự sửa (Phát hiện lỗi & tự khắc phục)</option>
-                      <option value="NCC đã lấy khuôn">NCC đã lấy khuôn (Chuyển trả đơn vị chế tạo sửa)</option>
-                      <option value="Khách duyệt (Sản xuất)">Khách duyệt (Sản xuất) (Ký duyệt nghiệm thu)</option>
-                    </select>
+                    {updateStatus && selectedMoldDetail ? (
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className={`status-badge-styled ${
+                          updateStatus === 'Thử khuôn' ? 'trial' :
+                          updateStatus === 'Nhà máy tự sửa' ? 'selfrepair' :
+                          updateStatus === 'NCC đã lấy khuôn' ? 'supplier' :
+                          updateStatus === 'Gửi mẫu khách' ? 'sample' :
+                          updateStatus === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
+                        }`} style={{ fontSize: '13px', padding: '6px 16px', borderRadius: '4px', fontWeight: '600' }}>
+                          {updateStatus}
+                        </span>
+                      </div>
+                    ) : (
+                      <select id="update-status" required value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)}>
+                        <option value="" disabled>-- Chọn trạng thái cập nhật tiếp theo --</option>
+                        <option value="Thử khuôn">Thử khuôn (Chạy thử mẫu)</option>
+                        <option value="Gửi mẫu khách">Gửi mẫu khách (Khách duyệt mẫu)</option>
+                        <option value="Nhà máy tự sửa">Nhà máy tự sửa (Phát hiện lỗi & tự khắc phục)</option>
+                        <option value="NCC đã lấy khuôn">NCC đã lấy khuôn (Chuyển trả đơn vị chế tạo sửa)</option>
+                        <option value="Khách duyệt (Sản xuất)">Khách duyệt (Sản xuất) (Ký duyệt nghiệm thu)</option>
+                      </select>
+                    )}
                   </div>
 
                   {/* TRƯỜNG ĐỘNG CHO TRẠNG THÁI LỖI */}
