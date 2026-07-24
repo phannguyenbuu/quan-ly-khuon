@@ -886,28 +886,41 @@ export default function App() {
                               
                               {isExpanded && (
                                 <tr className="transition-buttons-subrow">
-                                  <td colSpan={4} style={{ padding: '12px 16px', backgroundColor: '#e0f2fe', borderBottom: '1px solid var(--border-color)' }}>
+                                  <td colSpan={4} style={{ 
+                                    padding: '16px 20px', 
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #7c3aed 100%)', 
+                                    borderBottom: '1px solid var(--border-color)',
+                                    position: 'relative'
+                                  }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
+                                        <span className="info-label" style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.9)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
                                         <button 
                                           style={{
-                                            padding: '4px 12px',
+                                            padding: '5px 14px',
                                             fontSize: '11px',
-                                            backgroundColor: '#3b82f6',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
                                             color: '#fff',
-                                            border: 'none',
-                                            borderRadius: '4px',
+                                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                                            borderRadius: '6px',
                                             cursor: 'pointer',
-                                            fontWeight: '500',
-                                            transition: 'background-color 0.15s ease'
+                                            fontWeight: '600',
+                                            backdropFilter: 'blur(4px)',
+                                            WebkitBackdropFilter: 'blur(4px)',
+                                            transition: 'all 0.2s ease'
                                           }}
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setSelectedMoldCode(mold.code);
                                           }}
-                                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+                                          onMouseOver={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.35)';
+                                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+                                          }}
+                                          onMouseOut={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+                                          }}
                                         >
                                           Xem Nhật Ký Chi Tiết ➔
                                         </button>

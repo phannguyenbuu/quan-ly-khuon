@@ -32,8 +32,8 @@
     --status-sample-bg: #fef9c3;
     --status-sample-text: #a16207;
     
-    --status-accepted-bg: #0f766e;
-    --status-accepted-text: #ffffff;
+    --status-accepted-bg: #dbeafe;
+    --status-accepted-text: #1e40af;
     
     /* Khoảng cách & Hiệu ứng */
     --radius-lg: 16px;
@@ -3373,4 +3373,83 @@ body {
 }
 .timeline-horizontal-column:hover .infographic-node-title {
     color: #0052cc !important;
+}
+
+
+/* Glassmorphism Status Buttons overrides */
+.jira-status-btn {
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.jira-status-btn.import {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+.jira-status-btn.import:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    transform: translateY(-3px) !important;
+}
+
+.jira-status-btn.trial {
+    background-color: rgba(14, 165, 233, 0.25) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(14, 165, 233, 0.4) !important;
+}
+.jira-status-btn.trial:hover {
+    background-color: rgba(14, 165, 233, 0.4) !important;
+    border: 1px solid rgba(14, 165, 233, 0.6) !important;
+    transform: translateY(-3px) !important;
+}
+
+.jira-status-btn.selfrepair {
+    background-color: rgba(249, 115, 22, 0.25) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(249, 115, 22, 0.4) !important;
+}
+.jira-status-btn.selfrepair:hover {
+    background-color: rgba(249, 115, 22, 0.4) !important;
+    border: 1px solid rgba(249, 115, 22, 0.6) !important;
+    transform: translateY(-3px) !important;
+}
+
+.jira-status-btn.supplier {
+    background-color: rgba(168, 85, 247, 0.25) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(168, 85, 247, 0.4) !important;
+}
+.jira-status-btn.supplier:hover {
+    background-color: rgba(168, 85, 247, 0.4) !important;
+    border: 1px solid rgba(168, 85, 247, 0.6) !important;
+    transform: translateY(-3px) !important;
+}
+
+.jira-status-btn.sample {
+    background-color: rgba(234, 179, 8, 0.25) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(234, 179, 8, 0.4) !important;
+}
+.jira-status-btn.sample:hover {
+    background-color: rgba(234, 179, 8, 0.4) !important;
+    border: 1px solid rgba(234, 179, 8, 0.6) !important;
+    transform: translateY(-3px) !important;
+}
+
+.jira-status-btn.accepted {
+    background-color: rgba(59, 130, 246, 0.3) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(96, 165, 250, 0.45) !important;
+}
+.jira-status-btn.accepted:hover {
+    background-color: rgba(59, 130, 246, 0.45) !important;
+    border: 1px solid rgba(96, 165, 250, 0.65) !important;
+    transform: translateY(-3px) !important;
 }
