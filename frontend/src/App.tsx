@@ -974,12 +974,22 @@ export default function App() {
                               {isExpanded && (
                                 <tr className="transition-buttons-subrow">
                                   <td colSpan={4} style={{ 
-                                    padding: '16px 20px', 
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #7c3aed 100%)', 
+                                    padding: '8px 12px', 
                                     borderBottom: '1px solid var(--border-color)',
-                                    position: 'relative'
+                                    backgroundColor: 'transparent'
                                   }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                                    <div style={{ 
+                                      padding: '16px 20px', 
+                                      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #7c3aed 100%)', 
+                                      borderRadius: '12px',
+                                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                                      position: 'relative',
+                                      overflow: 'hidden',
+                                      display: 'flex', 
+                                      flexDirection: 'column', 
+                                      gap: '16px', 
+                                      width: '100%'
+                                    }}>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span className="info-label" style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.9)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
                                         <button 
@@ -1202,7 +1212,7 @@ export default function App() {
                                                             {getEventIcon(event)}
                                                           </div>
                                                           <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                                            {event.name}
+                                                            {i === 0 ? "Ngày nhập khuôn" : event.name}
                                                           </span>
                                                           <span style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.7)' }}>
                                                             {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
@@ -1247,7 +1257,7 @@ export default function App() {
                                                             {getEventIcon(event)}
                                                           </div>
                                                           <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                                            {event.name}
+                                                            {i === 0 ? "Ngày nhập khuôn" : event.name}
                                                           </span>
                                                           <span style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.7)' }}>
                                                             {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
@@ -1557,7 +1567,7 @@ export default function App() {
                                           {getEventIcon(event)}
                                         </div>
                                         <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                          {event.name}
+                                          {i === 0 ? "Ngày nhập khuôn" : event.name}
                                         </span>
                                         <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
                                           {i === 0 ? selectedMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
@@ -1604,7 +1614,7 @@ export default function App() {
                                           {getEventIcon(event)}
                                         </div>
                                         <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                          {event.name}
+                                          {i === 0 ? "Ngày nhập khuôn" : event.name}
                                         </span>
                                         <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
                                           {i === 0 ? selectedMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
@@ -2055,7 +2065,7 @@ export default function App() {
                                     {getEventIcon(event)}
                                   </div>
                                   <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                    {event.name}
+                                    {i === 0 ? "Ngày nhập khuôn" : event.name}
                                   </span>
                                   <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
                                     {i === 0 ? updateMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
@@ -2100,7 +2110,7 @@ export default function App() {
                                     {getEventIcon(event)}
                                   </div>
                                   <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                    {event.name}
+                                    {i === 0 ? "Ngày nhập khuôn" : event.name}
                                   </span>
                                   <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
                                     {i === 0 ? updateMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
