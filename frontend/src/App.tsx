@@ -84,8 +84,8 @@ export default function App() {
   };
 
   // Modal Control States
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'new' | 'update'>('new');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   
   // Fullscreen Lightbox Image url
   const [lightboxImgUrl, setLightboxImgUrl] = useState<string | null>(null);
@@ -153,7 +153,7 @@ export default function App() {
 
   // --- Clipboard Paste (Ctrl+V) listener ---
   useEffect(() => {
-    if (!isModalOpen) return;
+    if (!isCreateModalOpen && !isUpdateModalOpen) return;
     
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -172,7 +172,7 @@ export default function App() {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [isModalOpen]);
+  }, [isCreateModalOpen, isUpdateModalOpen]);
 
   // --- API Functions ---
   const fetchDbStatus = async () => {
@@ -460,7 +460,7 @@ export default function App() {
         // Cập nhật state, đóng modal và xem chi tiết
         setSelectedMoldCode(data.code);
         await fetchMolds();
-        setIsModalOpen(false);
+        setIsCreateModalOpen(false);
         setActiveTab('lookup');
       } else {
         alert(`Lỗi: ${data.detail || "Không thể tạo khuôn."}`);
@@ -549,7 +549,7 @@ export default function App() {
         // Đồng bộ, đóng modal và xem chi tiết
         setSelectedMoldCode(updateMoldCode);
         await fetchMolds();
-        setIsModalOpen(false);
+        setIsCreateModalOpen(false);
         setActiveTab('lookup');
       } else {
         alert(`Lỗi cập nhật: ${data.detail || "Thao tác thất bại."}`);
@@ -664,8 +664,7 @@ export default function App() {
   const triggerQuickUpdate = (code: string) => {
     setUpdateMoldCode(code);
     setUpdateStatus('');
-    setModalMode('update');
-    setIsModalOpen(true);
+    setIsUpdateModalOpen(true);
   };
 
   // Kích hoạt Modal ở chế độ Tạo mới (Create)
@@ -676,8 +675,7 @@ export default function App() {
     setNewImportDate(new Date().toISOString().split('T')[0]);
     setSelectedImages([]);
     setSelectedAttachments([]);
-    setModalMode('new');
-    setIsModalOpen(true);
+    setIsCreateModalOpen(true);
   };
 
   // Computed variables for compatibility with unified database schema (MoldEvent)
@@ -848,14 +846,76 @@ export default function App() {
                           else if (mold.status === "Gửi mẫu khách") statusClass = "sample";
                           else if (mold.status === "Khách duyệt (Sản xuất)") statusClass = "accepted";
 
+                          const isSelected = selectedMoldCode === mold.code;
+
                           return (
-                            <tr key={mold.code} className={selectedMoldCode === mold.code ? 'selected' : ''} onClick={() => setSelectedMoldCode(mold.code)}>
-                              <td><strong>{mold.code}</strong></td>
-                              <td>{mold.name}</td>
-                              <td>{mold.supplier}</td>
-                              <td>{mold.import_date}</td>
-                              <td><span className={`status-pill ${statusClass}`}>{mold.status}</span></td>
-                            </tr>
+                            <React.Fragment key={mold.code}>
+                              <tr className={isSelected ? 'selected' : ''} onClick={() => setSelectedMoldCode(mold.code)} style={{ cursor: 'pointer' }}>
+                                <td><strong>{mold.code}</strong></td>
+                                <td>{mold.name}</td>
+                                <td>{mold.supplier}</td>
+                                <td>{mold.import_date}</td>
+                                <td><span className={`status-pill ${statusClass}`}>{mold.status}</span></td>
+                              </tr>
+                              
+                              {isSelected && (
+                                <tr className="transition-buttons-subrow">
+                                  <td colSpan={5} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                                      <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
+                                      <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', marginTop: '4px', overflowX: 'auto', paddingBottom: '8px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+                                        {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
+                                          if (status === mold.status) return null;
+                                          const btnClass = 
+                                            status === 'Thử khuôn' ? 'trial' :
+                                            status === 'Nhà máy tự sửa' ? 'selfrepair' :
+                                            status === 'NCC đã lấy khuôn' ? 'supplier' :
+                                            status === 'Gửi mẫu khách' ? 'sample' :
+                                            status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import';
+                                          return (
+                                            <button 
+                                              key={status} 
+                                              className={`jira-status-btn ${btnClass}`}
+                                              style={{
+                                                width: '100px',
+                                                height: '100px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                textAlign: 'center',
+                                                fontSize: '12px',
+                                                padding: '8px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s ease',
+                                                lineHeight: '1.3',
+                                                fontWeight: '500',
+                                                textTransform: 'uppercase',
+                                                boxSizing: 'border-box',
+                                                overflow: 'hidden',
+                                                wordBreak: 'break-word',
+                                                backgroundColor: '#f1f5f9',
+                                                color: '#475569',
+                                                border: '1px solid #cbd5e1'
+                                              }}
+                                              onClick={(e) => {
+                                                e.stopPropagation(); // Ngăn chọn lại dòng
+                                                setUpdateMoldCode(mold.code);
+                                                setUpdateStatus(status);
+                                                setIsUpdateModalOpen(true);
+                                              }}
+                                            >
+                                              {status}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
                           );
                         })
                       )}
@@ -939,71 +999,18 @@ export default function App() {
                     </div>
 
                     <div className="detail-body">
-                      {/* Trạng thái hiện tại (Jira transition buttons) */}
-                      <div className="detail-status-row" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span className="info-label">Trạng thái hiện tại:</span>
-                          <span className={`status-badge-styled ${
-                            selectedMoldDetail.status === 'Thử khuôn' ? 'trial' :
-                            selectedMoldDetail.status === 'Nhà máy tự sửa' ? 'selfrepair' :
-                            selectedMoldDetail.status === 'NCC đã lấy khuôn' ? 'supplier' :
-                            selectedMoldDetail.status === 'Gửi mẫu khách' ? 'sample' :
-                            selectedMoldDetail.status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
-                          }`}>
-                            {selectedMoldDetail.status}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', marginTop: '8px' }}>
-                          <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
-                          <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', marginTop: '4px', overflowX: 'auto', paddingBottom: '8px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
-                            {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
-                              if (status === selectedMoldDetail.status) return null;
-                              const btnClass = 
-                                status === 'Thử khuôn' ? 'trial' :
-                                status === 'Nhà máy tự sửa' ? 'selfrepair' :
-                                status === 'NCC đã lấy khuôn' ? 'supplier' :
-                                status === 'Gửi mẫu khách' ? 'sample' :
-                                status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import';
-                              return (
-                                <button 
-                                  key={status} 
-                                  className={`jira-status-btn ${btnClass}`}
-                                  style={{
-                                    width: '100px',
-                                    height: '100px',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    textAlign: 'center',
-                                    fontSize: '12px',
-                                    padding: '8px',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                    lineHeight: '1.2',
-                                    fontWeight: '500',
-                                    textTransform: 'uppercase',
-                                    boxSizing: 'border-box',
-                                    overflow: 'hidden',
-                                    wordBreak: 'break-word',
-                                    backgroundColor: '#f1f5f9',
-                                    color: '#475569',
-                                    border: '1px solid #cbd5e1'
-                                  }}
-                                  onClick={() => {
-                                    setUpdateMoldCode(selectedMoldDetail.code);
-                                    setUpdateStatus(status);
-                                    setModalMode('update');
-                                    setIsModalOpen(true);
-                                  }}
-                                >
-                                  {status}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
+                      {/* Trạng thái hiện tại */}
+                      <div className="detail-status-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+                        <span className="info-label">Trạng thái hiện tại:</span>
+                        <span className={`status-badge-styled ${
+                          selectedMoldDetail.status === 'Thử khuôn' ? 'trial' :
+                          selectedMoldDetail.status === 'Nhà máy tự sửa' ? 'selfrepair' :
+                          selectedMoldDetail.status === 'NCC đã lấy khuôn' ? 'supplier' :
+                          selectedMoldDetail.status === 'Gửi mẫu khách' ? 'sample' :
+                          selectedMoldDetail.status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
+                        }`}>
+                          {selectedMoldDetail.status}
+                        </span>
                       </div>
 
                       {/* Ngày nhập kho */}
@@ -1399,59 +1406,19 @@ export default function App() {
       {/* ==========================================================================
          SINGLE DATA ENTRY MODAL (Tương tự Admake)
          ========================================================================== */}
-      {isModalOpen && (
-        <div className="modal-backdrop" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsModalOpen(false); }}>
+      {/* ==========================================================================
+         MODAL 1: KHAI BÁO KHUÔN NHẬP KHO MỚI
+         ========================================================================== */}
+      {isCreateModalOpen && (
+        <div className="modal-backdrop" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCreateModalOpen(false); }}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header" style={{ display: 'flex', gap: '8px', padding: '0 24px', justifyContent: 'flex-start', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
-              <button 
-                className={`modal-tab-item ${modalMode === 'new' ? 'active' : ''}`}
-                style={{
-                  padding: '16px 8px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: modalMode === 'new' ? '3px solid #0052cc' : '3px solid transparent',
-                  color: modalMode === 'new' ? '#0052cc' : 'var(--text-secondary)',
-                  fontWeight: modalMode === 'new' ? '500' : '400',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  transition: 'all 0.15s ease',
-                  marginRight: '16px'
-                }}
-                onClick={() => setModalMode('new')}
-              >
-                Khai báo khuôn mới
-              </button>
-              <button 
-                className={`modal-tab-item ${modalMode === 'update' ? 'active' : ''}`}
-                style={{
-                  padding: '16px 8px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: modalMode === 'update' ? '3px solid #0052cc' : '3px solid transparent',
-                  color: modalMode === 'update' ? '#0052cc' : 'var(--text-secondary)',
-                  fontWeight: modalMode === 'update' ? '500' : '400',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  transition: 'all 0.15s ease'
-                }}
-                onClick={() => setModalMode('update')}
-              >
-                Cập nhật quy trình
-              </button>
-              
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', margin: 0 }}>Khai báo khuôn mới</h2>
               <button 
                 className="modal-close-btn" 
-                onClick={() => setIsModalOpen(false)} 
+                onClick={() => setIsCreateModalOpen(false)} 
                 title="Đóng cửa sổ"
                 style={{
-                  position: 'absolute',
-                  right: '24px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -1462,39 +1429,215 @@ export default function App() {
               </button>
             </div>
             <div className="modal-body">
-              {/* CHẾ ĐỘ 1: KHAI BÁO MỚI */}
-              {modalMode === 'new' && (
-                <form onSubmit={handleCreateMold}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="new-code">MÃ KHUÔN (DUY NHẤT) *</label>
-                      <input type="text" id="new-code" required placeholder="E.G. MK-NAP-24" value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} pattern="^[a-zA-Z0-9\-_]+$" />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="new-name">TÊN KHUÔN SẢN XUẤT *</label>
-                      <input type="text" id="new-name" required placeholder="E.G. KHUÔN NẮP CHAI CỔ 28MM" value={newName} onChange={(e) => setNewName(e.target.value)} />
-                    </div>
+              <form onSubmit={handleCreateMold}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="new-code">MÃ KHUÔN (DUY NHẤT) *</label>
+                    <input type="text" id="new-code" required placeholder="E.G. MK-NAP-24" value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} pattern="^[a-zA-Z0-9\-_]+$" />
                   </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="new-supplier">ĐƠN VỊ CHẾ TẠO / NHÀ CUNG CẤP *</label>
-                      <input type="text" id="new-supplier" required placeholder="E.G. CƠ KHÍ KHUÔN MẪU MINH ĐỨC" value={newSupplier} onChange={(e) => setNewSupplier(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="new-import-date">NGÀY NHẬP KHO *</label>
-                      <input type="date" id="new-import-date" required value={newImportDate} onChange={(e) => setNewImportDate(e.target.value)} />
-                    </div>
+                  <div className="form-group">
+                    <label htmlFor="new-name">TÊN KHUÔN SẢN XUẤT *</label>
+                    <input type="text" id="new-name" required placeholder="E.G. KHUÔN NẮP CHAI CỔ 28MM" value={newName} onChange={(e) => setNewName(e.target.value)} />
                   </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="new-supplier">ĐƠN VỊ CHẾ TẠO / NHÀ CUNG CẤP *</label>
+                    <input type="text" id="new-supplier" required placeholder="E.G. CƠ KHÍ KHUÔN MẪU MINH ĐỨC" value={newSupplier} onChange={(e) => setNewSupplier(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="new-import-date">NGÀY NHẬP KHO *</label>
+                    <input type="date" id="new-import-date" required value={newImportDate} onChange={(e) => setNewImportDate(e.target.value)} />
+                  </div>
+                </div>
 
-                  {/* THÊM FILE ĐÍNH KÈM KHI KHAI BÁO MỚI */}
-                  <div className="form-row" style={{ marginTop: '16px' }}>
-                    <div className="form-group">
-                      <label>HÌNH ẢNH MẪU ĐẦU TIÊN (HỖ TRỢ CTRL+V)</label>
-                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-img-picker')?.click()}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        <span>Nhấn để chọn ảnh mẫu hoặc <b>bấm Ctrl+V</b> để dán ảnh</span>
+                {/* THÊM FILE ĐÍNH KÈM KHI KHAI BÁO MỚI */}
+                <div className="form-row" style={{ marginTop: '16px' }}>
+                  <div className="form-group">
+                    <label>HÌNH ẢNH MẪU ĐẦU TIÊN (HỖ TRỢ CTRL+V)</label>
+                    <div className="upload-drop-zone" onClick={() => document.getElementById('modal-img-picker')?.click()}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                      <span>Nhấn để chọn ảnh mẫu hoặc <b>bấm Ctrl+V</b> để dán ảnh</span>
+                    </div>
+                    <input type="file" id="modal-img-picker" style={{ display: 'none' }} accept="image/*" multiple onChange={(e) => {
+                      if (e.target.files) setSelectedImages(prev => [...prev, ...Array.from(e.target.files!)]);
+                    }} />
+                    
+                    {selectedImages.length > 0 && (
+                      <div className="selected-files-preview">
+                        {selectedImages.map((file, i) => (
+                          <div key={i} className="preview-file-badge">
+                            <span>📸 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+                            <button type="button" className="preview-file-remove" onClick={() => setSelectedImages(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                          </div>
+                        ))}
                       </div>
-                      <input type="file" id="modal-img-picker" style={{ display: 'none' }} accept="image/*" multiple onChange={(e) => {
+                    )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>TÀI LIỆU KÈM THEO (.PDF, .ZIP, .XLSX...)</label>
+                    <div className="upload-drop-zone" onClick={() => document.getElementById('modal-doc-picker')?.click()}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                      <span>Nhấn để chọn tệp tài liệu / bản vẽ đính kèm</span>
+                    </div>
+                    <input type="file" id="modal-doc-picker" style={{ display: 'none' }} accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" multiple onChange={(e) => {
+                      if (e.target.files) setSelectedAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+                    }} />
+                    
+                    {selectedAttachments.length > 0 && (
+                      <div className="selected-files-preview">
+                        {selectedAttachments.map((file, i) => (
+                          <div key={i} className="preview-file-badge">
+                            <span>📄 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+                            <button type="button" className="preview-file-remove" onClick={() => setSelectedAttachments(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-actions" style={{ marginTop: '24px' }}>
+                  <button type="submit" className="btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
+                    Hoàn Tất Nhập Kho
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================================================
+         MODAL 2: CẬP NHẬT QUY TRÌNH CHẠY THỬ / SỬA KHUÔN
+         ========================================================================== */}
+      {isUpdateModalOpen && (
+        <div className="modal-backdrop" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsUpdateModalOpen(false); }}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', margin: 0 }}>Cập nhật quy trình</h2>
+              <button 
+                className="modal-close-btn" 
+                onClick={() => setIsUpdateModalOpen(false)} 
+                title="Đóng cửa sổ"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '18px', height: '18px' }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleUpdateStatus}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="update-select-mold">KHUÔN CẦN CẬP NHẬT *</label>
+                    {updateMoldCode ? (
+                      <div style={{ padding: '10px 14px', backgroundColor: '#f1f5f9', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '600', fontSize: '13px', color: 'var(--text-primary)' }}>
+                        {updateMoldCode} - {molds.find(m => m.code === updateMoldCode)?.name || ''}
+                      </div>
+                    ) : (
+                      <select id="update-select-mold" required value={updateMoldCode} onChange={(e) => setUpdateMoldCode(e.target.value)}>
+                        <option value="" disabled>-- Click chọn mã khuôn đang quản lý --</option>
+                        {molds.map(m => (
+                          <option key={m.code} value={m.code}>{m.code} - {m.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="update-technician">HỌ TÊN NGƯỜI CẬP NHẬT *</label>
+                    <div className="input-with-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="input-icon-svg"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                      <input type="text" id="update-technician" required value={updateTechnician} onChange={(e) => setUpdateTechnician(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group status-update-group">
+                  <label htmlFor="update-status">CẬP NHẬT TRẠNG THÁI MỚI *</label>
+                  {updateStatus ? (
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span className={`status-badge-styled ${
+                        updateStatus === 'Thử khuôn' ? 'trial' :
+                        updateStatus === 'Nhà máy tự sửa' ? 'selfrepair' :
+                        updateStatus === 'NCC đã lấy khuôn' ? 'supplier' :
+                        updateStatus === 'Gửi mẫu khách' ? 'sample' :
+                        updateStatus === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
+                      }`} style={{ fontSize: '13px', padding: '6px 16px', borderRadius: '4px', fontWeight: '600' }}>
+                        {updateStatus}
+                      </span>
+                    </div>
+                  ) : (
+                    <select id="update-status" required value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)}>
+                      <option value="" disabled>-- Chọn trạng thái cập nhật tiếp theo --</option>
+                      <option value="Thử khuôn">Thử khuôn (Chạy thử mẫu)</option>
+                      <option value="Gửi mẫu khách">Gửi mẫu khách (Khách duyệt mẫu)</option>
+                      <option value="Nhà máy tự sửa">Nhà máy tự sửa (Phát hiện lỗi & tự khắc phục)</option>
+                      <option value="NCC đã lấy khuôn">NCC đã lấy khuôn (Chuyển trả đơn vị chế tạo sửa)</option>
+                      <option value="Khách duyệt (Sản xuất)">Khách duyệt (Sản xuất) (Ký duyệt nghiệm thu)</option>
+                    </select>
+                  )}
+                </div>
+
+                {/* TRƯỜNG ĐỘNG CHO TRẠNG THÁI LỖI */}
+                {(updateStatus === 'Nhà máy tự sửa' || updateStatus === 'NCC đã lấy khuôn') && (
+                  <div className="dynamic-form-fields">
+                    <div className="form-group">
+                      <label htmlFor="error-desc">MÔ TẢ LỖI PHÁT SINH (CHI TIẾT) *</label>
+                      <textarea id="error-desc" required placeholder="Mô tả hiện tượng lỗi (Ví dụ: Sản phẩm bị ba bớ nặng dính ở cuống phun, áp lực phun không cân bằng)" value={errorDesc} onChange={(e) => setErrorDesc(e.target.value)}></textarea>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="error-cause">NGUYÊN NHÂN GÂY LỖI</label>
+                        <textarea id="error-cause" placeholder="Nguyên nhân dự đoán từ kỹ thuật (Ví dụ: Kích thước cổng phun gate nhỏ hơn thiết kế 0.15mm)" value={errorCause} onChange={(e) => setErrorCause(e.target.value)}></textarea>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="error-solution">HƯỚNG XỬ LÝ / KHẮC PHỤC</label>
+                        <textarea id="error-solution" placeholder="Hướng khắc phục đề xuất (Ví dụ: Mở rộng cổng gate, xưởng tự hàn/sửa tiện)" value={errorSolution} onChange={(e) => setErrorSolution(e.target.value)}></textarea>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="error-image">HÌNH ẢNH CHI TIẾT LỖI BAN ĐẦU</label>
+                      <input type="file" id="error-image" accept="image/*" className="file-input-styled" onChange={(e) => setErrorImageFile(e.target.files ? e.target.files[0] : null)} />
+                      <p className="file-help">Tải ảnh chụp sự cố trực tiếp của lần sửa đổi này lên</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* TRƯỜNG ĐỘNG CHO TRẠNG THÁI NGHIỆM THU */}
+                {updateStatus === 'Khách duyệt (Sản xuất)' && (
+                  <div className="dynamic-form-fields">
+                    <div className="form-group">
+                      <label htmlFor="accept-feedback">NHẬN XÉT CỦA KHÁCH HÀNG (KÝ DUYỆT) *</label>
+                      <textarea id="accept-feedback" required placeholder="Ý kiến phản hồi từ phía khách hàng (Ví dụ: Sản phẩm đạt yêu cầu về độ bóng bề mặt và độ khít nắp hộp. Chấp thuận chạy sản xuất đại trà.)" value={acceptFeedback} onChange={(e) => setAcceptFeedback(e.target.value)}></textarea>
+                    </div>
+                  </div>
+                )}
+
+                {/* TRƯỜNG ĐỘNG GHI CHÚ CHUNG CHO THỬ KHUÔN / GỬI MẪU KHÁCH */}
+                {updateStatus && updateStatus !== 'Nhà máy tự sửa' && updateStatus !== 'NCC đã lấy khuôn' && updateStatus !== 'Khách duyệt (Sản xuất)' && (
+                  <div className="form-group" style={{ marginTop: '16px' }}>
+                    <label htmlFor="update-notes">GHI CHÚ / CHI TIẾT GIAO DỊCH</label>
+                    <textarea id="update-notes" placeholder="Mô tả ngắn gọn nội dung cập nhật (Ví dụ: Lắp khuôn lên máy số 5 chạy thử mẫu lần 2)" value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)}></textarea>
+                  </div>
+                )}
+
+                {/* HỖ TRỢ UPLOAD HÌNH ẢNH / TÀI LIỆU KÈM THEO TRONG CẬP NHẬT TRẠNG THÁI */}
+                {updateStatus && (
+                  <div className="form-row" style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                    <div className="form-group">
+                      <label>ẢNH THỰC TẾ GIAO DỊCH (HỖ TRỢ CTRL+V)</label>
+                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-img')?.click()}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                        <span>Nhấn để chọn ảnh hoặc <b>bấm Ctrl+V</b> để dán ảnh</span>
+                      </div>
+                      <input type="file" id="modal-update-img" style={{ display: 'none' }} accept="image/*" multiple onChange={(e) => {
                         if (e.target.files) setSelectedImages(prev => [...prev, ...Array.from(e.target.files!)]);
                       }} />
                       
@@ -1511,12 +1654,12 @@ export default function App() {
                     </div>
                     
                     <div className="form-group">
-                      <label>TÀI LIỆU KÈM THEO (.PDF, .ZIP, .XLSX...)</label>
-                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-doc-picker')?.click()}>
+                      <label>TÀI LIỆU / PHIẾU BÀN GIAO ĐÍNH KÈM</label>
+                      <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-doc')?.click()}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-                        <span>Nhấn để chọn tệp tài liệu / bản vẽ đính kèm</span>
+                        <span>Chọn tài liệu giao dịch đi kèm (.pdf, .zip, .xlsx...)</span>
                       </div>
-                      <input type="file" id="modal-doc-picker" style={{ display: 'none' }} accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" multiple onChange={(e) => {
+                      <input type="file" id="modal-update-doc" style={{ display: 'none' }} accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" multiple onChange={(e) => {
                         if (e.target.files) setSelectedAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
                       }} />
                       
@@ -1532,170 +1675,15 @@ export default function App() {
                       )}
                     </div>
                   </div>
+                )}
 
-                  <div className="form-actions" style={{ marginTop: '24px' }}>
-                    <button type="submit" className="btn-primary">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
-                      Hoàn Tất Nhập Kho
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* CHẾ ĐỘ 2: CẬP NHẬT TRẠNG THÁI */}
-              {modalMode === 'update' && (
-                <form onSubmit={handleUpdateStatus}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="update-select-mold">KHUÔN CẦN CẬP NHẬT *</label>
-                      {selectedMoldDetail ? (
-                        <div style={{ padding: '10px 14px', backgroundColor: '#f1f5f9', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '600', fontSize: '13px', color: 'var(--text-primary)' }}>
-                          {selectedMoldDetail.code} - {selectedMoldDetail.name}
-                        </div>
-                      ) : (
-                        <select id="update-select-mold" required value={updateMoldCode} onChange={(e) => setUpdateMoldCode(e.target.value)}>
-                          <option value="" disabled>-- Click chọn mã khuôn đang quản lý --</option>
-                          {molds.map(m => (
-                            <option key={m.code} value={m.code}>{m.code} - {m.name}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="update-technician">HỌ TÊN NGƯỜI CẬP NHẬT *</label>
-                      <div className="input-with-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="input-icon-svg"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                        <input type="text" id="update-technician" required value={updateTechnician} onChange={(e) => setUpdateTechnician(e.target.value)} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="form-group status-update-group">
-                    <label htmlFor="update-status">CẬP NHẬT TRẠNG THÁI MỚI *</label>
-                    {updateStatus && selectedMoldDetail ? (
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span className={`status-badge-styled ${
-                          updateStatus === 'Thử khuôn' ? 'trial' :
-                          updateStatus === 'Nhà máy tự sửa' ? 'selfrepair' :
-                          updateStatus === 'NCC đã lấy khuôn' ? 'supplier' :
-                          updateStatus === 'Gửi mẫu khách' ? 'sample' :
-                          updateStatus === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import'
-                        }`} style={{ fontSize: '13px', padding: '6px 16px', borderRadius: '4px', fontWeight: '600' }}>
-                          {updateStatus}
-                        </span>
-                      </div>
-                    ) : (
-                      <select id="update-status" required value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)}>
-                        <option value="" disabled>-- Chọn trạng thái cập nhật tiếp theo --</option>
-                        <option value="Thử khuôn">Thử khuôn (Chạy thử mẫu)</option>
-                        <option value="Gửi mẫu khách">Gửi mẫu khách (Khách duyệt mẫu)</option>
-                        <option value="Nhà máy tự sửa">Nhà máy tự sửa (Phát hiện lỗi & tự khắc phục)</option>
-                        <option value="NCC đã lấy khuôn">NCC đã lấy khuôn (Chuyển trả đơn vị chế tạo sửa)</option>
-                        <option value="Khách duyệt (Sản xuất)">Khách duyệt (Sản xuất) (Ký duyệt nghiệm thu)</option>
-                      </select>
-                    )}
-                  </div>
-
-                  {/* TRƯỜNG ĐỘNG CHO TRẠNG THÁI LỖI */}
-                  {(updateStatus === 'Nhà máy tự sửa' || updateStatus === 'NCC đã lấy khuôn') && (
-                    <div className="dynamic-form-fields">
-                      <div className="form-group">
-                        <label htmlFor="error-desc">MÔ TẢ LỖI PHÁT SINH (CHI TIẾT) *</label>
-                        <textarea id="error-desc" required placeholder="Mô tả hiện tượng lỗi (Ví dụ: Sản phẩm bị ba bớ nặng dính ở cuống phun, áp lực phun không cân bằng)" value={errorDesc} onChange={(e) => setErrorDesc(e.target.value)}></textarea>
-                      </div>
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label htmlFor="error-cause">NGUYÊN NHÂN GÂY LỖI</label>
-                          <textarea id="error-cause" placeholder="Nguyên nhân dự đoán từ kỹ thuật (Ví dụ: Kích thước cổng phun gate nhỏ hơn thiết kế 0.15mm)" value={errorCause} onChange={(e) => setErrorCause(e.target.value)}></textarea>
-                        </div>
-                        <div className="form-group">
-                          <label htmlFor="error-solution">HƯỚNG XỬ LÝ / KHẮC PHỤC</label>
-                          <textarea id="error-solution" placeholder="Hướng khắc phục đề xuất (Ví dụ: Mở rộng cổng gate, xưởng tự hàn/sửa tiện)" value={errorSolution} onChange={(e) => setErrorSolution(e.target.value)}></textarea>
-                        </div>
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="error-image">HÌNH ẢNH CHI TIẾT LỖI BAN ĐẦU</label>
-                        <input type="file" id="error-image" accept="image/*" className="file-input-styled" onChange={(e) => setErrorImageFile(e.target.files ? e.target.files[0] : null)} />
-                        <p className="file-help">Tải ảnh chụp sự cố trực tiếp của lần sửa đổi này lên</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* TRƯỜNG ĐỘNG CHO TRẠNG THÁI NGHIỆM THU */}
-                  {updateStatus === 'Khách duyệt (Sản xuất)' && (
-                    <div className="dynamic-form-fields">
-                      <div className="form-group">
-                        <label htmlFor="accept-feedback">NHẬN XÉT CỦA KHÁCH HÀNG (KÝ DUYỆT) *</label>
-                        <textarea id="accept-feedback" required placeholder="Ý kiến phản hồi từ phía khách hàng (Ví dụ: Sản phẩm đạt yêu cầu về độ bóng bề mặt và độ khít nắp hộp. Chấp thuận chạy sản xuất đại trà.)" value={acceptFeedback} onChange={(e) => setAcceptFeedback(e.target.value)}></textarea>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* TRƯỜNG ĐỘNG GHI CHÚ CHUNG CHO THỬ KHUÔN / GỬI MẪU KHÁCH */}
-                  {updateStatus && updateStatus !== 'Nhà máy tự sửa' && updateStatus !== 'NCC đã lấy khuôn' && updateStatus !== 'Khách duyệt (Sản xuất)' && (
-                    <div className="form-group" style={{ marginTop: '16px' }}>
-                      <label htmlFor="update-notes">GHI CHÚ / CHI TIẾT GIAO DỊCH</label>
-                      <textarea id="update-notes" placeholder="Mô tả ngắn gọn nội dung cập nhật (Ví dụ: Lắp khuôn lên máy số 5 chạy thử mẫu lần 2)" value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)}></textarea>
-                    </div>
-                  )}
-
-                  {/* HỖ TRỢ UPLOAD HÌNH ẢNH / TÀI LIỆU KÈM THEO TRONG CẬP NHẬT TRẠNG THÁI */}
-                  {updateStatus && (
-                    <div className="form-row" style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-                      <div className="form-group">
-                        <label>ẢNH THỰC TẾ GIAO DỊCH (HỖ TRỢ CTRL+V)</label>
-                        <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-img')?.click()}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                          <span>Nhấn để chọn ảnh hoặc <b>bấm Ctrl+V</b> để dán ảnh</span>
-                        </div>
-                        <input type="file" id="modal-update-img" style={{ display: 'none' }} accept="image/*" multiple onChange={(e) => {
-                          if (e.target.files) setSelectedImages(prev => [...prev, ...Array.from(e.target.files!)]);
-                        }} />
-                        
-                        {selectedImages.length > 0 && (
-                          <div className="selected-files-preview">
-                            {selectedImages.map((file, i) => (
-                              <div key={i} className="preview-file-badge">
-                                <span>📸 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
-                                <button type="button" className="preview-file-remove" onClick={() => setSelectedImages(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="form-group">
-                        <label>TÀI LIỆU / PHIẾU BÀN GIAO ĐÍNH KÈM</label>
-                        <div className="upload-drop-zone" onClick={() => document.getElementById('modal-update-doc')?.click()}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="upload-drop-icon"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-                          <span>Chọn tài liệu giao dịch đi kèm (.pdf, .zip, .xlsx...)</span>
-                        </div>
-                        <input type="file" id="modal-update-doc" style={{ display: 'none' }} accept=".pdf,.zip,.rar,.doc,.docx,.xls,.xlsx" multiple onChange={(e) => {
-                          if (e.target.files) setSelectedAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
-                        }} />
-                        
-                        {selectedAttachments.length > 0 && (
-                          <div className="selected-files-preview">
-                            {selectedAttachments.map((file, i) => (
-                              <div key={i} className="preview-file-badge">
-                                <span>📄 {file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
-                                <button type="button" className="preview-file-remove" onClick={() => setSelectedAttachments(prev => prev.filter((_, idx) => idx !== i))}>&times;</button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="form-actions" style={{ marginTop: '24px' }}>
-                    <button type="submit" className="btn-primary">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                      Xác Nhận Cập Nhật Quy Trình
-                    </button>
-                  </div>
-                </form>
-              )}
+                <div className="form-actions" style={{ marginTop: '24px' }}>
+                  <button type="submit" className="btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="btn-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                    Xác Nhận Cập Nhật Quy Trình
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
