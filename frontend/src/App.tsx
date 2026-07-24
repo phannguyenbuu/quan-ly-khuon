@@ -952,7 +952,7 @@ export default function App() {
                                                 cursor: 'pointer',
                                                 transition: 'all 0.15s ease',
                                                 lineHeight: '1.3',
-                                                fontWeight: '500',
+                                                fontWeight: '400',
                                                 textTransform: 'uppercase',
                                                 boxSizing: 'border-box',
                                                 overflow: 'hidden',
