@@ -958,7 +958,7 @@ export default function App() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     textAlign: 'center',
-                                    fontSize: '15px',
+                                    fontSize: '12px',
                                     padding: '8px',
                                     borderRadius: '8px',
                                     cursor: 'pointer',
