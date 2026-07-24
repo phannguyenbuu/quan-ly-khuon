@@ -109,6 +109,7 @@ export default function App() {
     }
   }, [editMold]);
   const [selectedMoldDetail, setSelectedMoldDetail] = useState<MoldDetail | null>(null);
+  const [expandedMoldDetail, setExpandedMoldDetail] = useState<MoldDetail | null>(null);
   const [updateMoldDetail, setUpdateMoldDetail] = useState<MoldDetail | null>(null);
   const [selectedTimelineEvent, setSelectedTimelineEvent] = useState<any | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
@@ -257,7 +258,20 @@ export default function App() {
   // Auto-fetch details when row is expanded to load timeline events
   useEffect(() => {
     if (expandedMoldCode) {
-      fetchMoldDetails(expandedMoldCode);
+      const fetchExpandedDetail = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/molds/${expandedMoldCode}`);
+          if (res.ok) {
+            const data = await res.json();
+            setExpandedMoldDetail(data);
+          }
+        } catch (e) {
+          console.error("Lỗi khi tải chi tiết dòng mở rộng:", e);
+        }
+      };
+      fetchExpandedDetail();
+    } else {
+      setExpandedMoldDetail(null);
     }
   }, [expandedMoldCode]);
 
@@ -1000,7 +1014,18 @@ export default function App() {
                                         </button>
                                       </div>
                                       
-                                      <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'nowrap', gap: '16px', marginTop: '4px', overflowX: 'auto', paddingBottom: '8px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+                                      <div className="jira-transition-buttons-grid" style={{ 
+                                        display: 'flex', 
+                                        flexDirection: 'row',
+                                        flexWrap: 'nowrap', 
+                                        gap: '12px', 
+                                        marginTop: '4px', 
+                                        overflowX: 'auto', 
+                                        width: '100%', 
+                                        WebkitOverflowScrolling: 'touch',
+                                        alignItems: 'center',
+                                        padding: '4px 0'
+                                      }}>
                                         {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
                                           if (status === mold.status) return null;
                                           const btnClass = 
@@ -1009,8 +1034,18 @@ export default function App() {
                                             status === 'NCC đã lấy khuôn' ? 'supplier' :
                                             status === 'Gửi mẫu khách' ? 'sample' :
                                             status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import';
+                                          
+                                          const getShortStatusName = (name: string) => {
+                                            if (name === 'Thử khuôn') return 'Thử\nkhuôn';
+                                            if (name === 'Nhà máy tự sửa') return 'Tự\nsửa';
+                                            if (name === 'NCC đã lấy khuôn') return 'NCC\nlấy';
+                                            if (name === 'Gửi mẫu khách') return 'Gửi\nmẫu';
+                                            if (name === 'Khách duyệt (Sản xuất)') return 'Duyệt\nSX';
+                                            return 'Nhập\nkho';
+                                          };
+
                                           return (
-                                            <div key={status} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '80px', flexShrink: 0 }}>
+                                            <div key={status} style={{ flexShrink: 0 }}>
                                               <button 
                                                 className={`jira-status-btn ${btnClass}`}
                                                 style={{
@@ -1020,10 +1055,15 @@ export default function App() {
                                                   display: 'flex',
                                                   alignItems: 'center',
                                                   justifyContent: 'center',
-                                                  fontSize: '20px',
-                                                  padding: '0',
+                                                  fontSize: '9px',
+                                                  fontWeight: '400',
+                                                  padding: '4px',
+                                                  textAlign: 'center',
                                                   cursor: 'pointer',
-                                                  boxSizing: 'border-box'
+                                                  boxSizing: 'border-box',
+                                                  lineHeight: '1.1',
+                                                  wordBreak: 'break-word',
+                                                  whiteSpace: 'pre-wrap'
                                                 }}
                                                 onClick={(e) => {
                                                   e.stopPropagation(); // Ngăn chọn lại dòng
@@ -1033,22 +1073,15 @@ export default function App() {
                                                 }}
                                                 title={status}
                                               >
-                                                {status === 'Thử khuôn' ? '🧪' :
-                                                 status === 'Nhà máy tự sửa' ? '🔧' :
-                                                 status === 'NCC đã lấy khuôn' ? '🚚' :
-                                                 status === 'Gửi mẫu khách' ? '📦' :
-                                                 status === 'Khách duyệt (Sản xuất)' ? '✅' : '📥'}
+                                                {getShortStatusName(status)}
                                               </button>
-                                              <span style={{ fontSize: '9px', color: 'rgba(255, 255, 255, 0.9)', textAlign: 'center', fontWeight: '500', textTransform: 'uppercase', lineHeight: '1.2' }}>
-                                                {status}
-                                              </span>
                                             </div>
                                           );
                                         })}
                                       </div>
 
                                       {/* Dòng thời gian sự kiện của khuôn tích hợp bên dưới */}
-                                      {selectedMoldDetail && selectedMoldDetail.code === mold.code && (
+                                      {expandedMoldDetail && expandedMoldDetail.code === mold.code && (
                                         <div className="subrow-timeline-section" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', paddingTop: '16px', marginTop: '4px' }}>
                                           <h4 style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                                             DÒNG THỜI GIAN TIẾN TRÌNH:
@@ -1069,10 +1102,10 @@ export default function App() {
                                             border: '1px solid rgba(255, 255, 255, 0.2)',
                                             WebkitOverflowScrolling: 'touch'
                                           }}>
-                                            {!selectedMoldDetail.events || selectedMoldDetail.events.length === 0 ? (
+                                            {!expandedMoldDetail.events || expandedMoldDetail.events.length === 0 ? (
                                               <p style={{ padding: '24px 0', width: '100%', textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px' }}>Chưa có sự kiện nào được ghi nhận.</p>
                                             ) : (() => {
-                                              const sortedEvents = [...(selectedMoldDetail.events || [])]
+                                              const sortedEvents = [...(expandedMoldDetail.events || [])]
                                                 .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                                               const totalEvents = sortedEvents.length;
 
@@ -1172,7 +1205,7 @@ export default function App() {
                                                             {event.name}
                                                           </span>
                                                           <span style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                            {formatTime(event.created_at).split(' ')[0]}
+                                                            {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
                                                           </span>
                                                         </div>
                                                       </>
@@ -1217,7 +1250,7 @@ export default function App() {
                                                             {event.name}
                                                           </span>
                                                           <span style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                            {formatTime(event.created_at).split(' ')[0]}
+                                                            {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
                                                           </span>
                                                         </div>
                                                       </>
@@ -1527,7 +1560,7 @@ export default function App() {
                                           {event.name}
                                         </span>
                                         <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
-                                          {formatTime(event.created_at).split(' ')[0]}
+                                          {i === 0 ? selectedMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
                                         </span>
                                       </div>
                                     </>
@@ -1574,7 +1607,7 @@ export default function App() {
                                           {event.name}
                                         </span>
                                         <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
-                                          {formatTime(event.created_at).split(' ')[0]}
+                                          {i === 0 ? selectedMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
                                         </span>
                                       </div>
                                     </>
@@ -2025,7 +2058,7 @@ export default function App() {
                                     {event.name}
                                   </span>
                                   <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
-                                    {formatTime(event.created_at).split(' ')[0]}
+                                    {i === 0 ? updateMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
                                   </span>
                                 </div>
                               </>
@@ -2070,7 +2103,7 @@ export default function App() {
                                     {event.name}
                                   </span>
                                   <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
-                                    {formatTime(event.created_at).split(' ')[0]}
+                                    {i === 0 ? updateMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
                                   </span>
                                 </div>
                               </>
