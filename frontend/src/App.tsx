@@ -828,14 +828,13 @@ export default function App() {
                         <th>MÃ KHUÔN</th>
                         <th>TÊN KHUÔN</th>
                         <th>NHÀ CUNG CẤP</th>
-                        <th>NGÀY NHẬP</th>
                         <th>TRẠNG THÁI</th>
                       </tr>
                     </thead>
                     <tbody>
                       {molds.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="form-empty-state">Không tìm thấy khuôn phù hợp.</td>
+                          <td colSpan={4} className="form-empty-state">Không tìm thấy khuôn phù hợp.</td>
                         </tr>
                       ) : (
                         molds.map(mold => {
@@ -851,16 +850,20 @@ export default function App() {
                           return (
                             <React.Fragment key={mold.code}>
                               <tr className={isSelected ? 'selected' : ''} onClick={() => setSelectedMoldCode(mold.code)} style={{ cursor: 'pointer' }}>
-                                <td><strong>{mold.code}</strong></td>
+                                <td>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <strong>{mold.code}</strong>
+                                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Nhập: {mold.import_date}</span>
+                                  </div>
+                                </td>
                                 <td>{mold.name}</td>
                                 <td>{mold.supplier}</td>
-                                <td>{mold.import_date}</td>
                                 <td><span className={`status-pill ${statusClass}`}>{mold.status}</span></td>
                               </tr>
                               
                               {isSelected && (
                                 <tr className="transition-buttons-subrow">
-                                  <td colSpan={5} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border-color)' }}>
+                                  <td colSpan={4} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
                                       <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
                                       <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', marginTop: '4px', overflowX: 'auto', paddingBottom: '8px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
