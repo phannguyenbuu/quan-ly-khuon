@@ -93,6 +93,7 @@ export default function App() {
   // Core Data States
   const [molds, setMolds] = useState<Mold[]>([]);
   const [selectedMoldCode, setSelectedMoldCode] = useState<string | null>(null);
+  const [expandedMoldCode, setExpandedMoldCode] = useState<string | null>(null);
   const [selectedMoldDetail, setSelectedMoldDetail] = useState<MoldDetail | null>(null);
   const [selectedTimelineEvent, setSelectedTimelineEvent] = useState<any | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
@@ -845,11 +846,12 @@ export default function App() {
                           else if (mold.status === "Gửi mẫu khách") statusClass = "sample";
                           else if (mold.status === "Khách duyệt (Sản xuất)") statusClass = "accepted";
 
+                          const isExpanded = expandedMoldCode === mold.code;
                           const isSelected = selectedMoldCode === mold.code;
 
                           return (
                             <React.Fragment key={mold.code}>
-                              <tr className={isSelected ? 'selected' : ''} onClick={() => setSelectedMoldCode(mold.code)} style={{ cursor: 'pointer' }}>
+                              <tr className={isExpanded || isSelected ? 'selected' : ''} onClick={() => setExpandedMoldCode(isExpanded ? null : mold.code)} style={{ cursor: 'pointer' }}>
                                 <td>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                     <strong>{mold.code}</strong>
@@ -861,11 +863,34 @@ export default function App() {
                                 <td><span className={`status-pill ${statusClass}`}>{mold.status}</span></td>
                               </tr>
                               
-                              {isSelected && (
+                              {isExpanded && (
                                 <tr className="transition-buttons-subrow">
                                   <td colSpan={4} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border-color)' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                                      <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="info-label" style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
+                                        <button 
+                                          style={{
+                                            padding: '4px 12px',
+                                            fontSize: '11px',
+                                            backgroundColor: '#3b82f6',
+                                            color: '#fff',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontWeight: '500',
+                                            transition: 'background-color 0.15s ease'
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedMoldCode(mold.code);
+                                          }}
+                                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+                                        >
+                                          Xem Nhật Ký Chi Tiết ➔
+                                        </button>
+                                      </div>
                                       <div className="jira-transition-buttons-grid" style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', marginTop: '4px', overflowX: 'auto', paddingBottom: '8px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
                                         {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
                                           if (status === mold.status) return null;
