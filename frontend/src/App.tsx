@@ -76,6 +76,7 @@ export default function App() {
   const [molds, setMolds] = useState<Mold[]>([]);
   const [selectedMoldCode, setSelectedMoldCode] = useState<string | null>(null);
   const [selectedMoldDetail, setSelectedMoldDetail] = useState<MoldDetail | null>(null);
+  const [selectedTimelineEvent, setSelectedTimelineEvent] = useState<any | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
     testing: 0,
@@ -721,17 +722,7 @@ export default function App() {
         })
     : [];
 
-  const transactionLogs = selectedMoldDetail?.events
-    ? [...selectedMoldDetail.events]
-        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .map((e: any) => ({
-          id: e.id,
-          status: e.name,
-          notes: e.content,
-          technician: e.tagged_staff || 'Hệ thống',
-          created_at: e.created_at
-        }))
-    : [];
+
 
   return (
     <div className="app-container">
@@ -967,12 +958,12 @@ export default function App() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     textAlign: 'center',
-                                    fontSize: '10px',
+                                    fontSize: '15px',
                                     padding: '8px',
                                     borderRadius: '8px',
                                     cursor: 'pointer',
                                     transition: 'all 0.15s ease',
-                                    lineHeight: '1.3',
+                                    lineHeight: '1.2',
                                     fontWeight: '500',
                                     textTransform: 'uppercase',
                                     boxSizing: 'border-box',
@@ -1065,31 +1056,94 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* LỊCH SỬ GIAO DỊCH */}
-                      <div className="detail-section">
-                        <h4 id="detail-logs-count-title">NHẬT KÝ GIAO DỊCH ({transactionLogs?.length || 0})</h4>
-                        <div className="timeline-container">
-                          {transactionLogs?.length === 0 ? (
-                            <p className="form-empty-state" style={{ padding: '10px 0' }}>Chưa có sự kiện nào.</p>
+                      {/* BẢNG DÒNG THỜI GIAN SỰ KIỆN (TIMELINE CHUNG) */}
+                      <div className="detail-section" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginTop: '20px' }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '16px', letterSpacing: '0.05em' }}>
+                          DÒNG THỜI GIAN SỰ KIỆN ({selectedMoldDetail.events?.length || 0})
+                        </h4>
+                        
+                        <div className="unified-timeline-wrapper" style={{ position: 'relative', paddingLeft: '24px', margin: '12px 0' }}>
+                          {/* Sợi chỉ dọc màu xám */}
+                          <div className="timeline-vertical-line" style={{
+                            position: 'absolute',
+                            left: '7px',
+                            top: '8px',
+                            bottom: '8px',
+                            width: '2px',
+                            backgroundColor: '#e2e8f0'
+                          }} />
+
+                          {selectedMoldDetail.events?.length === 0 ? (
+                            <p className="form-empty-state" style={{ padding: '10px 0' }}>Chưa có sự kiện nào được ghi nhận.</p>
                           ) : (
-                            [...transactionLogs]
+                            [...selectedMoldDetail.events]
                               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                              .map(log => {
-                                let itemClass = "import";
-                                if (log.status === "Thử khuôn") itemClass = "trial";
-                                else if (log.status === "Nhà máy tự sửa") itemClass = "selfrepair";
-                                else if (log.status === "NCC đã lấy khuôn") itemClass = "supplier";
-                                else if (log.status === "Gửi mẫu khách") itemClass = "sample";
-                                else if (log.status === "Khách duyệt (Sản xuất)") itemClass = "accepted";
+                              .map(event => {
+                                // Xác định màu node dựa trên event.type hoặc event.name
+                                let nodeColor = '#94a3b8'; // Mặc định xám
+                                if (event.type === 'issue') nodeColor = '#ef4444'; // Đỏ (sự cố)
+                                else if (event.type === 'acceptance') nodeColor = '#10b981'; // Xanh lá (nghiệm thu)
+                                else if (event.type === 'transaction') {
+                                  if (event.name === 'Thử khuôn') nodeColor = '#3b82f6';
+                                  else if (event.name === 'Gửi mẫu khách') nodeColor = '#f59e0b';
+                                  else if (event.name === 'Nhà máy tự sửa') nodeColor = '#f97316';
+                                  else if (event.name === 'NCC đã lấy khuôn') nodeColor = '#8b5cf6';
+                                }
 
                                 return (
-                                  <div key={log.id} className={`timeline-item ${itemClass}`}>
-                                    <div className="timeline-header">
-                                      <span className="timeline-status">{log.status}</span>
-                                      <span className="timeline-time">{formatTime(log.created_at)}</span>
+                                  <div 
+                                    key={event.id} 
+                                    className="timeline-node-item" 
+                                    style={{
+                                      position: 'relative',
+                                      marginBottom: '16px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'flex-start',
+                                      gap: '12px'
+                                    }}
+                                    onClick={() => setSelectedTimelineEvent(event)}
+                                  >
+                                    {/* Node tròn */}
+                                    <div className="timeline-node-dot" style={{
+                                      position: 'absolute',
+                                      left: '-22px',
+                                      top: '4px',
+                                      width: '12px',
+                                      height: '12px',
+                                      borderRadius: '50%',
+                                      backgroundColor: 'white',
+                                      border: `3px solid ${nodeColor}`,
+                                      boxShadow: '0 0 0 2px white',
+                                      transition: 'all 0.15s ease-in-out',
+                                      zIndex: 2
+                                    }} />
+
+                                    <div className="timeline-node-body" style={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: '2px',
+                                      width: '100%',
+                                      padding: '8px 12px',
+                                      borderRadius: '6px',
+                                      backgroundColor: '#f8fafc',
+                                      border: '1px solid #f1f5f9',
+                                      transition: 'all 0.15s ease'
+                                    }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="timeline-node-title" style={{ fontWeight: '500', fontSize: '12px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+                                          {event.name}
+                                        </span>
+                                        <span className="timeline-node-date" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                                          {formatTime(event.created_at)}
+                                        </span>
+                                      </div>
+                                      {event.tagged_staff && (
+                                        <span className="timeline-node-staff" style={{ fontSize: '10px', color: '#64748b' }}>
+                                          👤 {event.tagged_staff}
+                                        </span>
+                                      )}
                                     </div>
-                                    <p className="timeline-notes">{log.notes}</p>
-                                    <p className="timeline-author">&bull; {log.technician}</p>
                                   </div>
                                 );
                               })
@@ -1572,6 +1626,196 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* EVENT ROLL PAGE (DRAWER / SLIDE-IN PEAK VIEW) */}
+      {selectedTimelineEvent && (
+        <div className="roll-page-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(2px)',
+          zIndex: 2000,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          animation: 'fadeIn 0.2s ease-out'
+        }} onClick={() => setSelectedTimelineEvent(null)}>
+          
+          <div className="roll-page-drawer" style={{
+            width: '400px',
+            maxWidth: '100%',
+            height: '100%',
+            backgroundColor: 'var(--bg-card)',
+            boxShadow: '-4px 0 20px rgba(0,0,0,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxSizing: 'border-box'
+          }} onClick={(e) => e.stopPropagation()}>
+            
+            {/* Drawer Header */}
+            <div className="roll-page-header" style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid var(--border-color)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#fafafa'
+            }}>
+              <div>
+                <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  CHI TIẾT SỰ KIỆN / EVENT
+                </span>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: '500', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+                  {selectedTimelineEvent.name}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setSelectedTimelineEvent(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '28px',
+                  lineHeight: '1',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  padding: '4px 8px',
+                  borderRadius: '4px'
+                }}
+              >
+                &times;
+              </button>
+            </div>
+            
+            {/* Drawer Content */}
+            <div className="roll-page-content" style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}>
+              {/* Thẻ Thời gian & Người thực hiện */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Thời gian tạo:</span>
+                  <strong style={{ color: 'var(--text-primary)' }}>{formatTime(selectedTimelineEvent.created_at)}</strong>
+                </div>
+                {selectedTimelineEvent.tagged_staff && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '4px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Người thực hiện:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{selectedTimelineEvent.tagged_staff}</strong>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '4px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Loại sự kiện:</span>
+                  <span className={`status-pill ${selectedTimelineEvent.type}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                    {selectedTimelineEvent.type === 'issue' ? 'SỰ CỐ' :
+                     selectedTimelineEvent.type === 'acceptance' ? 'NGHIỆM THU' :
+                     selectedTimelineEvent.type === 'file_upload' ? 'FILE ĐÍNH KÈM' : 'QUY TRÌNH'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Nội dung chi tiết / Comment */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>NỘI DUNG / BÌNH LUẬN:</span>
+                <div 
+                  className="timeline-html-content"
+                  style={{
+                    fontSize: '13px',
+                    lineHeight: '1.6',
+                    color: 'var(--text-primary)',
+                    backgroundColor: '#fff',
+                    border: '1px solid var(--border-color)',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    minHeight: '80px',
+                    whiteSpace: 'pre-wrap'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: selectedTimelineEvent.content || 'Không có ghi chú thêm.' }}
+                />
+              </div>
+
+              {/* Hình ảnh đính kèm */}
+              {selectedTimelineEvent.images && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>HÌNH ẢNH THỰC TẾ:</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selectedTimelineEvent.images.split(',').map((img: string, idx: number) => (
+                      <div 
+                        key={idx} 
+                        className="image-zoom-box" 
+                        onClick={() => setLightboxImgUrl(`${API_BASE}${img.trim()}`)} 
+                        style={{ 
+                          cursor: 'pointer',
+                          width: '100px',
+                          height: '100px',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          border: '1px solid var(--border-color)'
+                        }}
+                      >
+                        <img 
+                          src={`${API_BASE}${img.trim()}`} 
+                          alt="Ảnh đính kèm sự kiện" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* File đính kèm tài liệu */}
+              {selectedTimelineEvent.attachments && (() => {
+                try {
+                  const docs = JSON.parse(selectedTimelineEvent.attachments);
+                  if (Array.isArray(docs) && docs.length > 0) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>TÀI LIỆU ĐÍNH KÈM:</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {docs.map((doc: any, idx: number) => (
+                            <a 
+                              key={idx} 
+                              href={`${API_BASE}${doc.url}`} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 12px',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '6px',
+                                textDecoration: 'none',
+                                color: '#0052cc',
+                                fontSize: '12px',
+                                backgroundColor: '#f8fafc',
+                                transition: 'all 0.15s ease'
+                              }}
+                              className="attachment-download-badge"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '16px', height: '16px' }}><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Tải về</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                } catch {}
+                return null;
+              })()}
+
             </div>
           </div>
         </div>
