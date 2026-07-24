@@ -110,7 +110,7 @@ export default function App() {
   }, [editMold]);
   const [selectedMoldDetail, setSelectedMoldDetail] = useState<MoldDetail | null>(null);
   const [expandedMoldDetail, setExpandedMoldDetail] = useState<MoldDetail | null>(null);
-  const [updateMoldDetail, setUpdateMoldDetail] = useState<MoldDetail | null>(null);
+
   const [selectedTimelineEvent, setSelectedTimelineEvent] = useState<any | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
@@ -738,25 +738,7 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // Fetch updateMoldDetail when updateMoldCode changes
-  useEffect(() => {
-    if (updateMoldCode && isUpdateModalOpen) {
-      const fetchUpdateDetail = async () => {
-        try {
-          const res = await fetch(`${API_BASE}/api/molds/${updateMoldCode}`);
-          if (res.ok) {
-            const data = await res.json();
-            setUpdateMoldDetail(data);
-          }
-        } catch (e) {
-          console.error("Lỗi khi tải chi tiết khuôn để cập nhật:", e);
-        }
-      };
-      fetchUpdateDetail();
-    } else {
-      setUpdateMoldDetail(null);
-    }
-  }, [updateMoldCode, isUpdateModalOpen]);
+
 
   // Kích hoạt Modal ở chế độ Sửa (Edit)
   const triggerQuickUpdate = (code: string) => {
@@ -1945,186 +1927,7 @@ export default function App() {
               </button>
             </div>
             <div className="modal-body">
-              {/* Lịch sử dòng thời gian ở đầu modal cập nhật */}
-              {updateMoldDetail && (
-                <div className="modal-timeline-section" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '20px', marginBottom: '20px' }}>
-                  <h4 style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                    DÒNG THỜI GIAN SỰ KIỆN ({updateMoldDetail.events?.length || 0})
-                  </h4>
-                  
-                  <div className="unified-timeline-wrapper-horizontal" style={{ 
-                    position: 'relative', 
-                    margin: '8px 0',
-                    height: '240px',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    overflowX: 'auto',
-                    padding: '0 10px',
-                    alignItems: 'center',
-                    backgroundColor: '#fcfcfd',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-color)',
-                    WebkitOverflowScrolling: 'touch'
-                  }}>
-                    {!updateMoldDetail.events || updateMoldDetail.events.length === 0 ? (
-                      <p className="form-empty-state" style={{ padding: '24px 0', width: '100%', textAlign: 'center' }}>Chưa có sự kiện nào được ghi nhận.</p>
-                    ) : (() => {
-                      const sortedEvents = [...(updateMoldDetail.events || [])]
-                        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-                      const totalEvents = sortedEvents.length;
 
-                      return sortedEvents.map((event, i) => {
-                        let nodeColor = '#94a3b8'; // Mặc định xám
-                        if (event.type === 'issue') nodeColor = '#ef4444'; // Đỏ (sự cố)
-                        else if (event.type === 'acceptance') nodeColor = '#10b981'; // Xanh lá (nghiệm thu)
-                        else if (event.type === 'transaction') {
-                          if (event.name === 'Thử khuôn') nodeColor = '#3b82f6';
-                          else if (event.name === 'Gửi mẫu khách') nodeColor = '#f59e0b';
-                          else if (event.name === 'Nhà máy tự sửa') nodeColor = '#f97316';
-                          else if (event.name === 'NCC đã lấy khuôn') nodeColor = '#8b5cf6';
-                        }
-
-                        const isEven = i % 2 === 0;
-
-                        return (
-                          <div 
-                            key={event.id} 
-                            className="timeline-horizontal-column" 
-                            style={{
-                              width: '130px',
-                              height: '100%',
-                              position: 'relative',
-                              flexShrink: 0,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => setSelectedTimelineEvent(event)}
-                          >
-                            <div className="track-segment" style={{
-                              position: 'absolute',
-                              left: '-4px',
-                              right: '-4px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              height: '12px',
-                              backgroundColor: nodeColor,
-                              zIndex: 1,
-                              clipPath: getClipPath(i, totalEvents)
-                            }} />
-
-                            <div className="track-dot" style={{
-                              position: 'absolute',
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              backgroundColor: '#fff',
-                              top: '50%',
-                              transform: 'translate(-50%, -50%)',
-                              left: '50%',
-                              zIndex: 2
-                            }} />
-
-                            {isEven ? (
-                              <>
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  height: '35px',
-                                  width: '2px',
-                                  backgroundColor: nodeColor,
-                                  zIndex: 1
-                                }} />
-                                <div style={{
-                                  position: 'absolute',
-                                  top: 'calc(50% + 35px)',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  gap: '2px',
-                                  zIndex: 3
-                                }}>
-                                  <div className="infographic-node-circle" style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '50%',
-                                    backgroundColor: nodeColor,
-                                    border: '2px solid #fff',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: '#fff',
-                                    fontSize: '14px',
-                                    transition: 'all 0.15s ease'
-                                  }}>
-                                    {getEventIcon(event)}
-                                  </div>
-                                  <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                    {i === 0 ? "Ngày nhập khuôn" : event.name}
-                                  </span>
-                                  <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
-                                    {i === 0 ? updateMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
-                                  </span>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div style={{
-                                  position: 'absolute',
-                                  bottom: '50%',
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  height: '35px',
-                                  width: '2px',
-                                  backgroundColor: nodeColor,
-                                  zIndex: 1
-                                }} />
-                                <div style={{
-                                  position: 'absolute',
-                                  bottom: 'calc(50% + 35px)',
-                                  display: 'flex',
-                                  flexDirection: 'column-reverse',
-                                  alignItems: 'center',
-                                  gap: '2px',
-                                  zIndex: 3
-                                }}>
-                                  <div className="infographic-node-circle" style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '50%',
-                                    backgroundColor: nodeColor,
-                                    border: '2px solid #fff',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: '#fff',
-                                    fontSize: '14px',
-                                    transition: 'all 0.15s ease'
-                                  }}>
-                                    {getEventIcon(event)}
-                                  </div>
-                                  <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                    {i === 0 ? "Ngày nhập khuôn" : event.name}
-                                  </span>
-                                  <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>
-                                    {i === 0 ? updateMoldDetail.import_date : formatTime(event.created_at).split(' ')[0]}
-                                  </span>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              )}
               <form onSubmit={handleUpdateStatus}>
                 <div className="form-row">
                   <div className="form-group">
@@ -2184,21 +1987,7 @@ export default function App() {
                       <label htmlFor="error-desc">MÔ TẢ LỖI PHÁT SINH (CHI TIẾT) *</label>
                       <textarea id="error-desc" required placeholder="Mô tả hiện tượng lỗi (Ví dụ: Sản phẩm bị ba bớ nặng dính ở cuống phun, áp lực phun không cân bằng)" value={errorDesc} onChange={(e) => setErrorDesc(e.target.value)}></textarea>
                     </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label htmlFor="error-cause">NGUYÊN NHÂN GÂY LỖI</label>
-                        <textarea id="error-cause" placeholder="Nguyên nhân dự đoán từ kỹ thuật (Ví dụ: Kích thước cổng phun gate nhỏ hơn thiết kế 0.15mm)" value={errorCause} onChange={(e) => setErrorCause(e.target.value)}></textarea>
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="error-solution">HƯỚNG XỬ LÝ / KHẮC PHỤC</label>
-                        <textarea id="error-solution" placeholder="Hướng khắc phục đề xuất (Ví dụ: Mở rộng cổng gate, xưởng tự hàn/sửa tiện)" value={errorSolution} onChange={(e) => setErrorSolution(e.target.value)}></textarea>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="error-image">HÌNH ẢNH CHI TIẾT LỖI BAN ĐẦU</label>
-                      <input type="file" id="error-image" accept="image/*" className="file-input-styled" onChange={(e) => setErrorImageFile(e.target.files ? e.target.files[0] : null)} />
-                      <p className="file-help">Tải ảnh chụp sự cố trực tiếp của lần sửa đổi này lên</p>
-                    </div>
+
                   </div>
                 )}
 
