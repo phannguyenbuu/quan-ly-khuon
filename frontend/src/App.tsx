@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Chart } from 'chart.js/auto';
 
 // Định nghĩa base URL: kết nối trực tiếp tới Backend VPS (https://mould.n-lux.com)
-const API_BASE = import.meta.env.VITE_API_URL || 'https://mould.n-lux.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // --- Interfaces & Types ---
 
@@ -973,7 +973,7 @@ export default function App() {
                                       width: '100%'
                                     }}>
                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span className="info-label" style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.9)', fontWeight: '600', letterSpacing: '0.05em' }}>CHUYỂN TRẠNG THÁI NHANH:</span>
+                                        <span className="info-label" style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.9)', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase' }}>DÒNG THỜI GIAN TIẾN TRÌNH:</span>
                                         <button 
                                           style={{
                                             padding: '5px 14px',
@@ -1005,114 +1005,93 @@ export default function App() {
                                           Sửa chi tiết
                                         </button>
                                       </div>
-                                      
-                                      <div className="jira-transition-buttons-grid" style={{ 
-                                        display: 'flex', 
+
+                                      <div className="unified-timeline-wrapper-horizontal" style={{ 
+                                        position: 'relative', 
+                                        margin: '8px 0',
+                                        height: '220px',
+                                        display: 'flex',
                                         flexDirection: 'row',
-                                        flexWrap: 'nowrap', 
-                                        gap: '12px', 
-                                        marginTop: '4px', 
-                                        overflowX: 'auto', 
-                                        width: '100%', 
-                                        WebkitOverflowScrolling: 'touch',
+                                        overflowX: 'auto',
+                                        padding: '0 20px',
                                         alignItems: 'center',
-                                        padding: '4px 0'
+                                        width: '100%',
+                                        WebkitOverflowScrolling: 'touch'
                                       }}>
-                                        {["Khuôn nhập kho", "Thử khuôn", "Gửi mẫu khách", "Nhà máy tự sửa", "NCC đã lấy khuôn", "Khách duyệt (Sản xuất)"].map(status => {
-                                          if (status === mold.status) return null;
-                                          const btnClass = 
-                                            status === 'Thử khuôn' ? 'trial' :
-                                            status === 'Nhà máy tự sửa' ? 'selfrepair' :
-                                            status === 'NCC đã lấy khuôn' ? 'supplier' :
-                                            status === 'Gửi mẫu khách' ? 'sample' :
-                                            status === 'Khách duyệt (Sản xuất)' ? 'accepted' : 'import';
+                                        {/* Trục ngang trung tâm */}
+                                        <div style={{
+                                          position: 'absolute',
+                                          left: 0,
+                                          right: 0,
+                                          top: '50%',
+                                          height: '2px',
+                                          backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                          zIndex: 1
+                                        }} />
+
+                                        {(() => {
+                                          let sortedEvents = [...((expandedMoldDetail && expandedMoldDetail.events) || [])]
+                                            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                                           
-                                          const getShortStatusName = (name: string) => {
-                                            if (name === 'Thử khuôn') return 'Thử\nkhuôn';
-                                            if (name === 'Nhà máy tự sửa') return 'Tự\nsửa';
-                                            if (name === 'NCC đã lấy khuôn') return 'NCC\nlấy';
-                                            if (name === 'Gửi mẫu khách') return 'Gửi\nmẫu';
-                                            if (name === 'Khách duyệt (Sản xuất)') return 'Duyệt\nSX';
-                                            return 'Nhập\nkho';
-                                          };
+                                          // Generate mock events if empty (Rule: ensure data is always available for mock working)
+                                          if (sortedEvents.length === 0) {
+                                            const baseTime = new Date(mold.import_date || '2026-06-15').getTime();
+                                            const oneDay = 24 * 60 * 60 * 1000;
+                                            sortedEvents = [
+                                              {
+                                                id: -999,
+                                                mold_code: mold.code,
+                                                type: 'transaction',
+                                                name: 'Khuôn nhập kho',
+                                                created_at: new Date(baseTime).toISOString(),
+                                                updated_at: new Date(baseTime).toISOString(),
+                                                tagged_staff: 'Kỹ thuật A'
+                                              },
+                                              {
+                                                id: -998,
+                                                mold_code: mold.code,
+                                                type: 'transaction',
+                                                name: 'Thử khuôn',
+                                                created_at: new Date(baseTime + 3 * oneDay).toISOString(),
+                                                updated_at: new Date(baseTime + 3 * oneDay).toISOString(),
+                                                tagged_staff: 'Kỹ thuật B'
+                                              },
+                                              {
+                                                id: -997,
+                                                mold_code: mold.code,
+                                                type: 'transaction',
+                                                name: 'Gửi mẫu khách',
+                                                created_at: new Date(baseTime + 5 * oneDay).toISOString(),
+                                                updated_at: new Date(baseTime + 5 * oneDay).toISOString(),
+                                                tagged_staff: 'Kinh doanh C'
+                                              },
+                                              {
+                                                id: -996,
+                                                mold_code: mold.code,
+                                                type: 'transaction',
+                                                name: 'Khách duyệt (Sản xuất)',
+                                                created_at: new Date(baseTime + 8 * oneDay).toISOString(),
+                                                updated_at: new Date(baseTime + 8 * oneDay).toISOString(),
+                                                tagged_staff: 'Lãnh đạo D'
+                                              }
+                                            ];
+                                          }
 
                                           return (
-                                            <div key={status} style={{ flexShrink: 0 }}>
-                                              <button 
-                                                className={`jira-status-btn ${btnClass}`}
-                                                style={{
-                                                  width: '50px',
-                                                  height: '50px',
-                                                  borderRadius: '50%',
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  fontSize: '9px',
-                                                  fontWeight: '400',
-                                                  padding: '4px',
-                                                  textAlign: 'center',
-                                                  cursor: 'pointer',
-                                                  boxSizing: 'border-box',
-                                                  lineHeight: '1.1',
-                                                  wordBreak: 'break-word',
-                                                  whiteSpace: 'pre-wrap'
-                                                }}
-                                                onClick={(e) => {
-                                                  e.stopPropagation(); // Ngăn chọn lại dòng
-                                                  setUpdateMoldCode(mold.code);
-                                                  setUpdateStatus(status);
-                                                  setIsUpdateModalOpen(true);
-                                                }}
-                                                title={status}
-                                              >
-                                                {getShortStatusName(status)}
-                                              </button>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-
-                                      {/* Dòng thời gian sự kiện của khuôn tích hợp bên dưới */}
-                                      {expandedMoldDetail && expandedMoldDetail.code === mold.code && (
-                                        <div className="subrow-timeline-section" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', paddingTop: '16px', marginTop: '4px' }}>
-                                          <h4 style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                                            DÒNG THỜI GIAN TIẾN TRÌNH:
-                                          </h4>
-                                          <div className="unified-timeline-wrapper-horizontal" style={{ 
-                                            position: 'relative', 
-                                            margin: '8px 0',
-                                            height: '240px',
-                                            display: 'flex',
-                                            flexDirection: 'row',
-                                            overflowX: 'auto',
-                                            padding: '0 10px',
-                                            alignItems: 'center',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                            backdropFilter: 'blur(8px)',
-                                            WebkitBackdropFilter: 'blur(8px)',
-                                            borderRadius: '8px',
-                                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                                            WebkitOverflowScrolling: 'touch'
-                                          }}>
-                                            {!expandedMoldDetail.events || expandedMoldDetail.events.length === 0 ? (
-                                              <p style={{ padding: '24px 0', width: '100%', textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px' }}>Chưa có sự kiện nào được ghi nhận.</p>
-                                            ) : (() => {
-                                              const sortedEvents = [...(expandedMoldDetail.events || [])]
-                                                .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-                                              const totalEvents = sortedEvents.length;
-
-                                              return sortedEvents.map((event, i) => {
+                                            <>
+                                              {sortedEvents.map((event, i) => {
                                                 let nodeColor = '#94a3b8';
                                                 if (event.type === 'issue') nodeColor = '#ef4444';
-                                                else if (event.type === 'acceptance') nodeColor = '#60a5fa';
+                                                else if (event.type === 'acceptance') nodeColor = '#3b82f6';
                                                 else if (event.type === 'transaction') {
-                                                  if (event.name === 'Thử khuôn') nodeColor = '#38bdf8';
-                                                  else if (event.name === 'Gửi mẫu khách') nodeColor = '#fbbf24';
-                                                  else if (event.name === 'Nhà máy tự sửa') nodeColor = '#fb923c';
-                                                  else if (event.name === 'NCC đã lấy khuôn') nodeColor = '#c084fc';
-                                                  else if (event.name === 'Khách duyệt (Sản xuất)') nodeColor = '#60a5fa';
+                                                  if (event.name === 'Thử khuôn') nodeColor = '#06b6d4';
+                                                  else if (event.name === 'Gửi mẫu khách') nodeColor = '#eab308';
+                                                  else if (event.name === 'Nhà máy tự sửa') nodeColor = '#f97316';
+                                                  else if (event.name === 'NCC đã lấy khuôn') nodeColor = '#a855f7';
+                                                  else if (event.name === 'Khách duyệt (Sản xuất)') nodeColor = '#3b82f6';
                                                 }
 
+                                                // Alternating layout: even indices go UP, odd indices go DOWN
                                                 const isEven = i % 2 === 0;
 
                                                 return (
@@ -1120,7 +1099,7 @@ export default function App() {
                                                     key={event.id} 
                                                     className="timeline-horizontal-column" 
                                                     style={{
-                                                      width: '130px',
+                                                      width: '140px',
                                                       height: '100%',
                                                       position: 'relative',
                                                       flexShrink: 0,
@@ -1130,96 +1109,49 @@ export default function App() {
                                                       alignItems: 'center',
                                                       cursor: 'pointer'
                                                     }}
-                                                    onClick={() => setSelectedTimelineEvent(event)}
+                                                    onClick={() => {
+                                                      if (event.id > 0) {
+                                                        setSelectedTimelineEvent(event);
+                                                      }
+                                                    }}
                                                   >
-                                                    <div className="track-segment" style={{
-                                                      position: 'absolute',
-                                                      left: '-4px',
-                                                      right: '-4px',
-                                                      top: '50%',
-                                                      transform: 'translateY(-50%)',
-                                                      height: '12px',
-                                                      backgroundColor: nodeColor,
-                                                      zIndex: 1,
-                                                      clipPath: getClipPath(i, totalEvents)
-                                                    }} />
-
+                                                    {/* Node Dot on the central horizontal line */}
                                                     <div className="track-dot" style={{
                                                       position: 'absolute',
-                                                      width: '6px',
-                                                      height: '6px',
+                                                      width: '10px',
+                                                      height: '10px',
                                                       borderRadius: '50%',
                                                       backgroundColor: '#fff',
+                                                      border: `3px solid ${nodeColor}`,
                                                       top: '50%',
-                                                      transform: 'translate(-50%, -50%)',
                                                       left: '50%',
-                                                      zIndex: 2
+                                                      transform: 'translate(-50%, -50%)',
+                                                      zIndex: 5,
+                                                      boxShadow: '0 0 6px rgba(255,255,255,0.6)'
                                                     }} />
 
                                                     {isEven ? (
                                                       <>
-                                                        <div style={{
-                                                          position: 'absolute',
-                                                          top: '50%',
-                                                          left: '50%',
-                                                          transform: 'translateX(-50%)',
-                                                          height: '35px',
-                                                          width: '2px',
-                                                          backgroundColor: nodeColor,
-                                                          zIndex: 1
-                                                        }} />
-                                                        <div style={{
-                                                          position: 'absolute',
-                                                          top: 'calc(50% + 35px)',
-                                                          display: 'flex',
-                                                          flexDirection: 'column',
-                                                          alignItems: 'center',
-                                                          gap: '2px',
-                                                          zIndex: 3
-                                                        }}>
-                                                          <div className="infographic-node-circle" style={{
-                                                            width: '32px',
-                                                            height: '32px',
-                                                            borderRadius: '50%',
-                                                            backgroundColor: nodeColor,
-                                                            border: '2px solid #fff',
-                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            color: '#fff',
-                                                            fontSize: '14px',
-                                                            transition: 'all 0.15s ease'
-                                                          }}>
-                                                            {getEventIcon(event)}
-                                                          </div>
-                                                          <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                                                            {i === 0 ? "Ngày nhập khuôn" : event.name}
-                                                          </span>
-                                                          <span style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                            {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
-                                                          </span>
-                                                        </div>
-                                                      </>
-                                                    ) : (
-                                                      <>
+                                                        {/* Vertical line going UP */}
                                                         <div style={{
                                                           position: 'absolute',
                                                           bottom: '50%',
                                                           left: '50%',
                                                           transform: 'translateX(-50%)',
                                                           height: '35px',
-                                                          width: '2px',
-                                                          backgroundColor: nodeColor,
-                                                          zIndex: 1
+                                                          width: '1.5px',
+                                                          backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                                                          zIndex: 2
                                                         }} />
+                                                        
+                                                        {/* Content box UP */}
                                                         <div style={{
                                                           position: 'absolute',
                                                           bottom: 'calc(50% + 35px)',
                                                           display: 'flex',
                                                           flexDirection: 'column-reverse',
                                                           alignItems: 'center',
-                                                          gap: '2px',
+                                                          gap: '4px',
                                                           zIndex: 3
                                                         }}>
                                                           <div className="infographic-node-circle" style={{
@@ -1228,32 +1160,152 @@ export default function App() {
                                                             borderRadius: '50%',
                                                             backgroundColor: nodeColor,
                                                             border: '2px solid #fff',
-                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                             color: '#fff',
-                                                            fontSize: '14px',
-                                                            transition: 'all 0.15s ease'
+                                                            fontSize: '13px'
                                                           }}>
                                                             {getEventIcon(event)}
                                                           </div>
-                                                          <span className="infographic-node-title" style={{ fontSize: '9px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
+                                                          <span className="infographic-node-title" style={{ fontSize: '10px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '125px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                             {i === 0 ? "Ngày nhập khuôn" : event.name}
                                                           </span>
-                                                          <span style={{ fontSize: '8px', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                            {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
+                                                        </div>
+
+                                                        {/* Date text DOWN (directly below the line opposite the content box) */}
+                                                        <span style={{
+                                                          position: 'absolute',
+                                                          top: 'calc(50% + 8px)',
+                                                          fontSize: '11px',
+                                                          fontWeight: '700',
+                                                          color: '#fff',
+                                                          textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                                                          zIndex: 3
+                                                        }}>
+                                                          {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
+                                                        </span>
+                                                      </>
+                                                    ) : (
+                                                      <>
+                                                        {/* Vertical line going DOWN */}
+                                                        <div style={{
+                                                          position: 'absolute',
+                                                          top: '50%',
+                                                          left: '50%',
+                                                          transform: 'translateX(-50%)',
+                                                          height: '35px',
+                                                          width: '1.5px',
+                                                          backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                                                          zIndex: 2
+                                                        }} />
+                                                        
+                                                        {/* Content box DOWN */}
+                                                        <div style={{
+                                                          position: 'absolute',
+                                                          top: 'calc(50% + 35px)',
+                                                          display: 'flex',
+                                                          flexDirection: 'column',
+                                                          alignItems: 'center',
+                                                          gap: '4px',
+                                                          zIndex: 3
+                                                        }}>
+                                                          <div className="infographic-node-circle" style={{
+                                                            width: '32px',
+                                                            height: '32px',
+                                                            borderRadius: '50%',
+                                                            backgroundColor: nodeColor,
+                                                            border: '2px solid #fff',
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            color: '#fff',
+                                                            fontSize: '13px'
+                                                          }}>
+                                                            {getEventIcon(event)}
+                                                          </div>
+                                                          <span className="infographic-node-title" style={{ fontSize: '10px', fontWeight: '600', color: '#fff', textTransform: 'uppercase', maxWidth: '125px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                            {i === 0 ? "Ngày nhập khuôn" : event.name}
                                                           </span>
                                                         </div>
+
+                                                        {/* Date text UP (directly above the line opposite the content box) */}
+                                                        <span style={{
+                                                          position: 'absolute',
+                                                          bottom: 'calc(50% + 8px)',
+                                                          fontSize: '11px',
+                                                          fontWeight: '700',
+                                                          color: '#fff',
+                                                          textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                                                          zIndex: 3
+                                                        }}>
+                                                          {i === 0 ? mold.import_date : formatTime(event.created_at).split(' ')[0]}
+                                                        </span>
                                                       </>
                                                     )}
                                                   </div>
                                                 );
-                                              });
-                                            })()}
-                                          </div>
-                                        </div>
-                                      )}
+                                              })}
+                                              
+                                              {/* Add New Node button (+) at the end */}
+                                              <div 
+                                                className="timeline-horizontal-column" 
+                                                style={{
+                                                  width: '95px',
+                                                  height: '100%',
+                                                  position: 'relative',
+                                                  flexShrink: 0,
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  justifyContent: 'center',
+                                                  alignItems: 'center'
+                                                }}
+                                              >
+                                                <button 
+                                                  type="button"
+                                                  style={{
+                                                    width: '45px',
+                                                    height: '45px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                                    border: '2px dashed rgba(255, 255, 255, 0.5)',
+                                                    color: '#fff',
+                                                    fontSize: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    zIndex: 3
+                                                  }}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setUpdateMoldCode(mold.code);
+                                                    setUpdateStatus('');
+                                                    setIsUpdateModalOpen(true);
+                                                  }}
+                                                  onMouseOver={(e) => {
+                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.35)';
+                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                  }}
+                                                  onMouseOut={(e) => {
+                                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                  }}
+                                                  title="Thêm tiến trình mới"
+                                                >
+                                                  +
+                                                </button>
+                                                <span style={{ fontSize: '9px', color: 'rgba(255, 255, 255, 0.8)', marginTop: '6px', fontWeight: '500', textTransform: 'uppercase' }}>
+                                                  Cập nhật
+                                                </span>
+                                              </div>
+                                            </>
+                                          );
+                                        })()}
+                                      </div>
                                     </div>
                                   </td>
                                 </tr>
