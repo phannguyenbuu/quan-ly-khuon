@@ -1402,10 +1402,63 @@ export default function App() {
       {isModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'new' ? 'KHAI BÁO KHUÔN NHẬP KHO MỚI' : 'CẬP NHẬT QUY TRÌNH CHẠY THỬ / SỬA KHUÔN'}</h2>
-              <button className="modal-close-btn" onClick={() => setIsModalOpen(false)} title="Đóng cửa sổ">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <div className="modal-header" style={{ display: 'flex', gap: '8px', padding: '0 24px', justifyContent: 'flex-start', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
+              <button 
+                className={`modal-tab-item ${modalMode === 'new' ? 'active' : ''}`}
+                style={{
+                  padding: '16px 8px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: modalMode === 'new' ? '3px solid #0052cc' : '3px solid transparent',
+                  color: modalMode === 'new' ? '#0052cc' : 'var(--text-secondary)',
+                  fontWeight: modalMode === 'new' ? '500' : '400',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  transition: 'all 0.15s ease',
+                  marginRight: '16px'
+                }}
+                onClick={() => setModalMode('new')}
+              >
+                Khai báo khuôn mới
+              </button>
+              <button 
+                className={`modal-tab-item ${modalMode === 'update' ? 'active' : ''}`}
+                style={{
+                  padding: '16px 8px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: modalMode === 'update' ? '3px solid #0052cc' : '3px solid transparent',
+                  color: modalMode === 'update' ? '#0052cc' : 'var(--text-secondary)',
+                  fontWeight: modalMode === 'update' ? '500' : '400',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  transition: 'all 0.15s ease'
+                }}
+                onClick={() => setModalMode('update')}
+              >
+                Cập nhật quy trình
+              </button>
+              
+              <button 
+                className="modal-close-btn" 
+                onClick={() => setIsModalOpen(false)} 
+                title="Đóng cửa sổ"
+                style={{
+                  position: 'absolute',
+                  right: '24px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: '18px', height: '18px' }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
             <div className="modal-body">
