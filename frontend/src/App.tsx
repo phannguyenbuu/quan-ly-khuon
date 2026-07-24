@@ -869,18 +869,29 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="detail-panel-card">
-                    <div className="detail-header">
-                      <div className="detail-title-block" style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                          <h2>{selectedMoldDetail.code}</h2>
-                          <button 
-                            className="detail-close-btn"
-                            onClick={() => { setSelectedMoldCode(null); setSelectedMoldDetail(null); }}
-                            title="Đóng chi tiết"
-                          >
-                            &times;
-                          </button>
-                        </div>
+                    <div className="detail-header" style={{ position: 'relative' }}>
+                      <button 
+                        className="detail-close-btn"
+                        style={{
+                          position: 'absolute',
+                          top: '12px',
+                          right: '12px',
+                          zIndex: 10,
+                          fontSize: '24px',
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          background: 'none',
+                          border: 'none',
+                          lineHeight: '1',
+                          color: 'var(--text-secondary)'
+                        }}
+                        onClick={() => { setSelectedMoldCode(null); setSelectedMoldDetail(null); }}
+                        title="Đóng chi tiết"
+                      >
+                        &times;
+                      </button>
+                      <div className="detail-title-block" style={{ width: '100%', paddingRight: '24px' }}>
+                        <h2>{selectedMoldDetail.code}</h2>
                         <h3>{selectedMoldDetail.name}</h3>
                         <p className="supplier-info">Nhà cung cấp: {selectedMoldDetail.supplier}</p>
                       </div>
@@ -949,19 +960,19 @@ export default function App() {
                                   key={status} 
                                   className={`jira-status-btn ${btnClass}`}
                                   style={{
-                                    width: '50px',
-                                    height: '50px',
+                                    width: '100px',
+                                    height: '100px',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     textAlign: 'center',
-                                    fontSize: '7px',
-                                    padding: '3px',
-                                    borderRadius: '4px',
+                                    fontSize: '10px',
+                                    padding: '8px',
+                                    borderRadius: '8px',
                                     cursor: 'pointer',
                                     transition: 'all 0.15s ease',
-                                    lineHeight: '1.1',
+                                    lineHeight: '1.3',
                                     fontWeight: '500',
                                     textTransform: 'uppercase',
                                     boxSizing: 'border-box',
